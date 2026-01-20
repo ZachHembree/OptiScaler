@@ -14,6 +14,8 @@
 
 #include <Config.h>
 
+#pragma warning(disable : 4244)
+
 OS_Vk::OS_Vk(std::string InName, VkDevice InDevice, VkPhysicalDevice InPhysicalDevice, bool InUpsample)
     : Shader_Vk(InName, InDevice, InPhysicalDevice)
 {

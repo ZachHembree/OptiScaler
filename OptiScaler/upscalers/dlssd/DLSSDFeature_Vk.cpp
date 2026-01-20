@@ -115,6 +115,9 @@ bool DLSSDFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
         VkImage finalOutputImage = VK_NULL_HANDLE;
 
         _sharpness = GetSharpness(InParameters);
+        float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+        bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV();
+
         bool rcasEnabled = Config::Instance()->RcasEnabled.value_or(true) &&
                            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
                                                   Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
@@ -163,12 +166,65 @@ bool DLSSDFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
             }
         }
 
+        if (useSS)
+        {
+            VkImage oldImage = OS->GetImage();
+
+            if (OS->CreateImageResource(
+                    Device, PhysicalDevice, paramOutput->Resource.ImageViewInfo.Width,
+                    paramOutput->Resource.ImageViewInfo.Height, paramOutput->Resource.ImageViewInfo.Format,
+                    VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT))
+            {
+                paramOutput->Resource.ImageViewInfo.Image = OS->GetImage();
+                paramOutput->Resource.ImageViewInfo.ImageView = OS->GetImageView();
+
+                VkImageSubresourceRange range {};
+                range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                range.baseMipLevel = 0;
+                range.levelCount = 1;
+                range.baseArrayLayer = 0;
+                range.layerCount = 1;
+
+                VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+                if (oldImage != VK_NULL_HANDLE && oldImage == paramOutput->Resource.ImageViewInfo.Image)
+                    oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+                OS->SetImageLayout(InCmdBuffer, paramOutput->Resource.ImageViewInfo.Image, oldLayout,
+                                   VK_IMAGE_LAYOUT_GENERAL, range);
+            }
+            else
+            {
+                useSS = false;
+            }
+        }
+
         nvResult = NVNGXProxy::VULKAN_EvaluateFeature()(InCmdBuffer, _p_dlssdHandle, InParameters, NULL);
 
         if (nvResult != NVSDK_NGX_Result_Success)
         {
             LOG_ERROR("_EvaluateFeature result: {0:X}", (unsigned int) nvResult);
             return false;
+        }
+
+        if (useSS)
+        {
+            VkImageSubresourceRange range {};
+            range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            range.baseMipLevel = 0;
+            range.levelCount = 1;
+            range.baseArrayLayer = 0;
+            range.layerCount = 1;
+
+            OS->SetImageLayout(InCmdBuffer, OS->GetImage(), VK_IMAGE_LAYOUT_GENERAL,
+                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range);
+
+            VkExtent2D outExtent = { TargetWidth(), TargetHeight() };
+
+            if (!rcasEnabled)
+                OS->Dispatch(Device, InCmdBuffer, OS->GetImageView(), finalOutputView, outExtent);
+            else
+                OS->Dispatch(Device, InCmdBuffer, OS->GetImageView(), RCAS->GetImageView(), outExtent);
         }
 
         if (rcasEnabled)

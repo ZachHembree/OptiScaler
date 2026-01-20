@@ -329,7 +329,6 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     _sharpness = GetSharpness(InParameters);
 
     float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
-
     bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.inputWidth, params.inputHeight);

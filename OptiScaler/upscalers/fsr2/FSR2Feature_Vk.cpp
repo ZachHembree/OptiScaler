@@ -354,6 +354,9 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
     VkImage finalOutputImage = ((NVSDK_NGX_Resource_VK*) paramOutput)->Resource.ImageViewInfo.Image;
 
     _sharpness = GetSharpness(InParameters);
+    float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
+    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV();
+
     bool rcasEnabled = Config::Instance()->RcasEnabled.value_or(true) &&
                        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
                                               Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
@@ -393,6 +396,43 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
         else
         {
             rcasEnabled = false;
+        }
+    }
+
+    if (useSS)
+    {
+        VkImage oldImage = OS->GetImage();
+
+        if (OS->CreateImageResource(
+                Device, PhysicalDevice, ((NVSDK_NGX_Resource_VK*) paramOutput)->Resource.ImageViewInfo.Width,
+                ((NVSDK_NGX_Resource_VK*) paramOutput)->Resource.ImageViewInfo.Height,
+                ((NVSDK_NGX_Resource_VK*) paramOutput)->Resource.ImageViewInfo.Format,
+                VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT))
+        {
+            params.output =
+                ffxGetTextureResourceVK(&_context, OS->GetImage(), OS->GetImageView(),
+                                        ((NVSDK_NGX_Resource_VK*) paramOutput)->Resource.ImageViewInfo.Width,
+                                        ((NVSDK_NGX_Resource_VK*) paramOutput)->Resource.ImageViewInfo.Height,
+                                        ((NVSDK_NGX_Resource_VK*) paramOutput)->Resource.ImageViewInfo.Format,
+                                        (wchar_t*) L"FSR2_Output", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
+
+            VkImageSubresourceRange range {};
+            range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            range.baseMipLevel = 0;
+            range.levelCount = 1;
+            range.baseArrayLayer = 0;
+            range.layerCount = 1;
+
+            VkImageLayout oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+            if (oldImage != VK_NULL_HANDLE && oldImage == OS->GetImage())
+                oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            OS->SetImageLayout(InCmdBuffer, OS->GetImage(), oldLayout, VK_IMAGE_LAYOUT_GENERAL, range);
+        }
+        else
+        {
+            useSS = false;
         }
     }
 
@@ -490,6 +530,26 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
         return false;
     }
 
+    if (useSS)
+    {
+        VkImageSubresourceRange range {};
+        range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        range.baseMipLevel = 0;
+        range.levelCount = 1;
+        range.baseArrayLayer = 0;
+        range.layerCount = 1;
+
+        OS->SetImageLayout(InCmdBuffer, OS->GetImage(), VK_IMAGE_LAYOUT_GENERAL,
+                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range);
+
+        VkExtent2D outExtent = { TargetWidth(), TargetHeight() };
+
+        if (!rcasEnabled)
+            OS->Dispatch(Device, InCmdBuffer, OS->GetImageView(), finalOutputView, outExtent);
+        else
+            OS->Dispatch(Device, InCmdBuffer, OS->GetImageView(), RCAS->GetImageView(), outExtent);
+    }
+
     if (rcasEnabled)
     {
         VkImageSubresourceRange range {};
@@ -501,7 +561,6 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
 
         RCAS->SetImageLayout(InCmdBuffer, RCAS->GetImage(), VK_IMAGE_LAYOUT_GENERAL,
                              VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, range);
-        RCAS->SetImageLayout(InCmdBuffer, finalOutputImage, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL, range);
 
         RcasConstants rcasConstants {};
         rcasConstants.Sharpness = _sharpness;
