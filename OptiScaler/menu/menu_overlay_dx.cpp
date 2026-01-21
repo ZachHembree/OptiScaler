@@ -118,7 +118,7 @@ static void CreateRenderTargetDx12(ID3D12Device* device, IDXGISwapChain* pSwapCh
 
 static void CleanupRenderTargetDx12(bool clearQueue)
 {
-    if (!_isInited || !_dx12Device)
+    if (!_isInited || !_dx12Device || State::Instance().isShuttingDown)
         return;
 
     LOG_TRACE("clearQueue: {}", clearQueue);
@@ -202,7 +202,7 @@ static void CreateRenderTargetDx11(IDXGISwapChain* pSwapChain)
 
 static void CleanupRenderTargetDx11(bool shutDown)
 {
-    if (!_isInited || !_dx11Device)
+    if (!_isInited || !_dx11Device || State::Instance().isShuttingDown)
         return;
 
     if (!shutDown)
