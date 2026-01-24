@@ -263,7 +263,7 @@ static const QuirkEntry quirkTable[] = {
     QUIRK_ENTRY("acshadows.exe", GameQuirk::DisableDxgiSpoofing),
     QUIRK_ENTRY("farmingsimulator2025game.exe", GameQuirk::DisableDxgiSpoofing),
 
-    // FSR2 only, no spoof needed
+    // FSR2/3 only, no spoof needed
     //
     // Tiny Tina's Wonderlands, Dead Island 2, The Outer Worlds: Spacer's Choice Edition, Scorn, Thymesia, Company of
     // Heroes 3, Caravan Sandwitch, Asterigos: Curse of the Stars, Saints Row (2022)
@@ -301,6 +301,12 @@ static const QuirkEntry quirkTable[] = {
     QUIRK_ENTRY_UE(keeper, GameQuirk::DisableFSR2Inputs, GameQuirk::DisableFSR3Inputs),
     QUIRK_ENTRY_UE(paganidol, GameQuirk::DisableFSR2Inputs,
                    GameQuirk::DisableFSR3Inputs), // Keeper WinGDK PaganIdol
+
+    // XeSS only, no spoof needed
+    //
+    // Redout 2, Disney Epic Mickey: Rebrushed
+    QUIRK_ENTRY_UE(redout2, GameQuirk::DisableDxgiSpoofing),
+    QUIRK_ENTRY_UE(recolored, GameQuirk::DisableDxgiSpoofing),
 
     // Self-explanatory
     //

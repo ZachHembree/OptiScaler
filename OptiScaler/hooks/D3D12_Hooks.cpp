@@ -543,7 +543,7 @@ static ULONG hkD3D12DeviceRelease(IUnknown* device)
 
         o_D3D12DeviceRelease(device);
     }
-    else  if (State::Instance().currentD3D12Device == device)
+    else if (State::Instance().currentD3D12Device == device)
     {
         device->AddRef();
         auto refCount = o_D3D12DeviceRelease(device);
