@@ -33,6 +33,9 @@ enum class GameQuirk : uint64_t
     UseFsr2VulkanInputs,
     ForceBorderlessWhenUsingXeFG,
     OverrideVsyncWhenUsingXeFG,
+    SetDepthValidNow,
+    SetVelocityValidNow,
+    SetHudlessValidNow,
 
     // Quirks that are applied deeper in code
     CyberpunkHudlessStateOverride,
@@ -196,9 +199,10 @@ static const QuirkEntry quirkTable[] = {
                    GameQuirk::DisableFSR3Inputs),
 
     // Starfield
-    // SL spoof enough to unlock everything DLSS
+    // SL spoof enough to unlock everything DLSS, Depth and Velocity needed to avoid FG artifacts
     QUIRK_ENTRY("starfield.exe", GameQuirk::DisableFSR2Inputs, GameQuirk::DisableFSR3Inputs,
-                GameQuirk::DisableDxgiSpoofing, GameQuirk::ForceAutoExposure),
+                GameQuirk::DisableDxgiSpoofing, GameQuirk::ForceAutoExposure, GameQuirk::SetDepthValidNow,
+                GameQuirk::SetVelocityValidNow),
 
     // Nixxes Sony ports - Dxgi spoofing disabled due to RT crashes
     //
@@ -348,8 +352,8 @@ static const QuirkEntry quirkTable[] = {
     QUIRK_ENTRY("bg3.exe", GameQuirk::EnableVulkanExtensionSpoofing),
 
     // Arknights: Endfield (Vulkan)
-    QUIRK_ENTRY("endfield.exe", GameQuirk::DontUseNtDllHooks, GameQuirk::EnableVulkanSpoofing,
-                GameQuirk::EnableVulkanExtensionSpoofing),
+    QUIRK_ENTRY("endfield.exe", GameQuirk::DontUseNtDllHooks, GameQuirk::VulkanDLSSBarrierFixup,
+                GameQuirk::EnableVulkanSpoofing, GameQuirk::EnableVulkanExtensionSpoofing),
 
 };
 

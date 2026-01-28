@@ -80,7 +80,7 @@ static std::vector<std::string> splashText = { "Cope smarter, not harder",
                                                "Some of those pixels might even be real!",
                                                "Just don't look too closely at the image",
                                                "Even supports \"software\" XeSS!",
-                                               "Take RCAS, you might need it",
+                                               "It’s too blurry to go alone, take RCAS with you",
                                                "Thanks nitec, back to you nitec",
                                                "Tested and approved by By-U",
                                                "0.8 was an inside job",
@@ -2996,13 +2996,13 @@ bool MenuCommon::RenderMenu()
 
                 // clang-format off
                 const char* fgInputOptions[] = {
-                    "No Frame Generation",
-                    "Nukem's DLSSG",
-                    "FSR 3.1 FG",
-                    "DLSSG via Streamline",
-                    "XeFG",
-                    "OptiFG (Upscaler)",
-                    "FSR 3.0 FG",
+                    "No Frame Generation",   // NoFG
+                    "Nukem's DLSSG",         // Nukems
+                    "FSR 3.1 FG",            // FSRFG
+                    "DLSSG via Streamline",  // DLSSG
+                    "XeFG",                  // XeFG
+                    "OptiFG (Upscaler)",     // Upscaler
+                    "FSR 3.0 FG",            // FSRFG30
                 };
                 std::vector<std::string> fgInputDesc = {
                     "",
@@ -3098,11 +3098,11 @@ bool MenuCommon::RenderMenu()
 
                 // clang-format off
                 const char* fgOutputOptions[] = {
-                    "No Frame Generation",
-                    "FSR3-FG via Nukem's",
-                    "FSR FG",
-                    "DLSSG",
-                    "XeFG"
+                    "No Frame Generation",  // NoFG
+                    "FSR3-FG via Nukem's",  // Nukems
+                    "FSR FG",               // FSRFG
+                    "DLSSG",                // DLSSG
+                    "XeFG"                  // XeFG
                 };
                 std::vector<std::string> fgOutputDesc = {
                     "",

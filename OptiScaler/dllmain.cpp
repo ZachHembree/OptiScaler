@@ -1239,6 +1239,24 @@ static void printQuirks(flag_set<GameQuirk>& quirks)
         state->detectedQuirks.push_back("Force create D3D12 device for w/Dx12");
     }
 
+    if (quirks & GameQuirk::SetDepthValidNow)
+    {
+        spdlog::info("Quirk: Set Depth as ValidNow");
+        state->detectedQuirks.push_back("Set Depth as ValidNow");
+    }
+
+    if (quirks & GameQuirk::SetVelocityValidNow)
+    {
+        spdlog::info("Quirk: Set Velocity as ValidNow");
+        state->detectedQuirks.push_back("Set Velocity as ValidNow");
+    }
+
+    if (quirks & GameQuirk::SetHudlessValidNow)
+    {
+        spdlog::info("Quirk: Set Hudless as ValidNow");
+        state->detectedQuirks.push_back("Set Hudless as ValidNow");
+    }
+
     return;
 }
 
@@ -1364,6 +1382,27 @@ static void CheckQuirks()
         State::Instance().activeFgInput != FGInput::Nukems)
     {
         Config::Instance()->OverrideVsync.set_volatile_value(true);
+    }
+
+    if (quirks & GameQuirk::SetDepthValidNow && !Config::Instance()->FGDepthValidNow.has_value() &&
+        State::Instance().activeFgInput == FGInput::DLSSG && State::Instance().activeFgOutput != FGOutput::NoFG &&
+        State::Instance().activeFgOutput != FGOutput::Nukems)
+    {
+        Config::Instance()->FGDepthValidNow.set_volatile_value(true);
+    }
+
+    if (quirks & GameQuirk::SetVelocityValidNow && !Config::Instance()->FGVelocityValidNow.has_value() &&
+        State::Instance().activeFgInput == FGInput::DLSSG && State::Instance().activeFgOutput != FGOutput::NoFG &&
+        State::Instance().activeFgOutput != FGOutput::Nukems)
+    {
+        Config::Instance()->FGVelocityValidNow.set_volatile_value(true);
+    }
+
+    if (quirks & GameQuirk::SetHudlessValidNow && !Config::Instance()->FGHudlessValidNow.has_value() &&
+        State::Instance().activeFgInput == FGInput::DLSSG && State::Instance().activeFgOutput != FGOutput::NoFG &&
+        State::Instance().activeFgOutput != FGOutput::Nukems)
+    {
+        Config::Instance()->FGHudlessValidNow.set_volatile_value(true);
     }
 
     // For Luma, we assume if Luma addon in game folder it's used
