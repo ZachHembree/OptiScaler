@@ -300,8 +300,6 @@ powershell -Command "Start-Sleep -Seconds 2; $commit = git rev-parse --short HEA
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="DllNames.h" />
-    <ClInclude Include="E:\Downloads\FidelityFX-SDK-1.1.4\ffx-api\include\ffx_api\vk\ffx_api_vk.h" />
-    <ClInclude Include="E:\Downloads\FidelityFX-SDK-1.1.4\ffx-api\include\ffx_api\vk\ffx_api_vk.hpp" />
     <ClInclude Include="exports\d3d12.h" />
     <ClInclude Include="exports\dbghelp.h" />
     <ClInclude Include="exports\dxgi.h" />
