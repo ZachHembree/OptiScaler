@@ -9,6 +9,7 @@
 
 #include "ffx_framegeneration.h"
 #include "dx12/ffx_api_dx12.h"
+#include "dx12/ffx_api_framegeneration_dx12.h"
 
 static ID3D12Device* _device = nullptr;
 static FG_Constants _fgConst {};
@@ -190,6 +191,7 @@ ffxReturnCode_t ffxCreateContext_Dx12FG(ffxContext* context, ffxCreateContextDes
     {
         ffxCreateContextDescHeader* next = nullptr;
         next = desc;
+
         while (next->pNext != nullptr)
         {
             next = next->pNext;
@@ -255,7 +257,7 @@ ffxReturnCode_t ffxCreateContext_Dx12FG(ffxContext* context, ffxCreateContextDes
     else if (desc->type == FFX_API_CREATE_CONTEXT_DESC_TYPE_FRAMEGENERATIONSWAPCHAIN_WRAP_DX12)
     {
         auto cDesc = (ffxCreateContextDescFrameGenerationSwapChainWrapDX12*) desc;
-
+        
         if (s.currentFG != nullptr && s.currentFGSwapchain != nullptr)
         {
             *context = (ffxContext) scContext; // s.currentFG->SwapchainContext();

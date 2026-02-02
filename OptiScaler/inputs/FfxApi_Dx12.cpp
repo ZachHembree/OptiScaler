@@ -12,6 +12,7 @@
 
 #include "ffx_upscale.h"
 #include "dx12/ffx_api_dx12.h"
+#include "dx12/ffx_api_framegeneration_dx12.h"
 
 #include <magic_enum.hpp>
 

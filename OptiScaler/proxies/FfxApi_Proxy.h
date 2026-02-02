@@ -20,22 +20,7 @@
 
 #include <magic_enum.hpp>
 
-// A mess to be able to import both
-#define FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_WAITCALLBACK FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_WAITCALLBACK_DX12
-#define FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_FRAMEPACINGTUNING FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_FRAMEPACINGTUNING_DX12
-
 #include <dx12/ffx_api_dx12.h>
-
-#undef FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_WAITCALLBACK
-#undef FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_FRAMEPACINGTUNING
-
-#define FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_WAITCALLBACK FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_WAITCALLBACK_VK
-#define FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_FRAMEPACINGTUNING FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_FRAMEPACINGTUNING_VK
-
-#include <vk/ffx_api_vk.h>
-
-#undef FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_WAITCALLBACK
-#undef FFX_API_CONFIGURE_FG_SWAPCHAIN_KEY_FRAMEPACINGTUNING
 
 enum class FFXStructType
 {
@@ -121,25 +106,20 @@ class FfxApiProxy
         {
         case FFX_API_EFFECT_ID_GENERAL:
             return FFXStructType::General;
-
         case FFX_API_EFFECT_ID_UPSCALE:
             return FFXStructType::Upscaling;
-
         case FFX_API_EFFECT_ID_FRAMEGENERATION:
             return FFXStructType::FG;
-
-        case FFX_API_EFFECT_ID_FRAMEGENERATIONSWAPCHAIN_DX12:
+        // Equal to FFX_API_EFFECT_ID_FRAMEGENERATIONSWAPCHAIN_DX12 in SDK 1.x
+        case FFX_API_EFFECT_ID_FRAMEGENERATIONSWAPCHAIN:
             return FFXStructType::SwapchainDX12;
-
-        case FFX_API_EFFECT_ID_FGSC_VK:
+        // [Deprecated] Equal to FFX_API_EFFECT_ID_FGSC_VK in SDK 1.x
+        case FFX_API_EFFECT_ID_FRAMEGENERATIONSWAPCHAIN_VK:
             return FFXStructType::SwapchainVulkan;
-
-        case 0x00050000u:
+        case FFX_API_EFFECT_ID_DENOISER:
             return FFXStructType::Denoiser;
-
-        case 0x00060000u:
+        case FFX_API_EFFECT_ID_RADIANCECACHE:
             return FFXStructType::RadianceCache;
-
         default:
             return FFXStructType::Unknown;
         }

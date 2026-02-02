@@ -7,6 +7,7 @@
 #include <menu/menu_overlay_dx.h>
 
 #include <magic_enum.hpp>
+#include "dx12/ffx_api_framegeneration_dx12.h"
 
 static inline int GetFormatIndex(DXGI_FORMAT format)
 {
@@ -213,17 +214,6 @@ bool FSRFG_Dx12::UIFormatTransfer(int index, ID3D12Device* device, ID3D12Graphic
     return false;
 }
 
-typedef struct FfxSwapchainFramePacingTuning
-{
-    float safetyMarginInMs;  // in Millisecond. Default is 0.1ms
-    float varianceFactor;    // valid range [0.0,1.0]. Default is 0.1
-    bool allowHybridSpin;    // Allows pacing spinlock to sleep. Default is false.
-    uint32_t hybridSpinTime; // How long to spin if allowHybridSpin is true. Measured in timer resolution units. Not
-                             // recommended to go below 2. Will result in frequent overshoots. Default is 2.
-    bool allowWaitForSingleObjectOnFence; // Allows WaitForSingleObject instead of spinning for fence value. Default is
-                                          // false.
-} FfxSwapchainFramePacingTuning;
-
 void FSRFG_Dx12::ConfigureFramePaceTuning()
 {
     State::Instance().FSRFGFTPchanged = false;
@@ -231,7 +221,7 @@ void FSRFG_Dx12::ConfigureFramePaceTuning()
     if (_swapChainContext == nullptr || Version() < feature_version { 3, 1, 3 })
         return;
 
-    FfxSwapchainFramePacingTuning fpt {};
+    FfxApiSwapchainFramePacingTuning fpt {};
     if (Config::Instance()->FGFramePacingTuning.value_or_default())
     {
         fpt.allowHybridSpin = Config::Instance()->FGFPTAllowHybridSpin.value_or_default();
