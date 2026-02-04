@@ -253,6 +253,12 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_Shutdown1(ID3D11Device* InDevice)
 
 #pragma region NVSDK_NGX_D3D11 Parameters
 
+/**
+ * @brief [Deprecated NGX API] Superceeded by NVSDK_NGX_AllocateParameters and NVSDK_NGX_GetCapabilityParameters.
+ *
+ * Retrieves a common NVSDK parameter map for providing params to the SDK. The lifetime of this
+ * map is NOT managed by the application. It is expected to be managed internally by the SDK.
+ */
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter** OutParameters)
 {
     LOG_FUNC();
@@ -272,14 +278,24 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter
         if (result == NVSDK_NGX_Result_Success)
         {
             InitNGXParameters(*OutParameters);
+            SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVPersistent);
             return result;
         }
     }
 
-    *OutParameters = GetNGXParameters("OptiDx11");
+    // Get custom parameters if using custom backend
+    static NVNGX_Parameters oldParams = NVNGX_Parameters("OptiDx11", true);
+    InitNGXParameters(*OutParameters);
+    *OutParameters = &oldParams;
+
     return NVSDK_NGX_Result_Success;
 }
 
+/**
+ * @brief Allocates a new NVSDK parameter map pre-populated with NGX capabilities and information about available
+ * features. The output parameter map may also be used in the same ways as a parameter map allocated with
+ * AllocateParameters(). The lifetime of this map is managed by the calling application with DestroyParameters().
+ */
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX_Parameter** OutParameters)
 {
     LOG_FUNC();
@@ -299,15 +315,21 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX
         if (result == NVSDK_NGX_Result_Success)
         {
             InitNGXParameters(*OutParameters);
+            SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVDynamic);
             return result;
         }
     }
 
-    *OutParameters = GetNGXParameters("OptiDx11");
+    *OutParameters = new NVNGX_Parameters("OptiDx11", false);
+    InitNGXParameters(*OutParameters);
 
     return NVSDK_NGX_Result_Success;
 }
 
+/**
+ * @brief Allocates a new parameter map used to provide parameters needed by the DLSS API. The lifetime of this map
+ * is managed by the calling application with DestroyParameters().
+ */
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Parameter** OutParameters)
 {
     LOG_FUNC();
@@ -322,12 +344,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Para
         LOG_INFO("calling NVNGXProxy::D3D11_AllocateParameters result: {0:X}", (UINT) result);
 
         if (result == NVSDK_NGX_Result_Success)
+        {
+            SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVDynamic);
             return result;
+        }
     }
 
-    auto params = new NVNGX_Parameters();
-    params->Name = "OptiDx11";
-    *OutParameters = params;
+    *OutParameters = new NVNGX_Parameters("OptiDx11", false);
+    InitNGXParameters(*OutParameters);
 
     return NVSDK_NGX_Result_Success;
 }
@@ -351,19 +375,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_DestroyParameters(NVSDK_NGX_Param
     if (InParameters == nullptr)
         return NVSDK_NGX_Result_Fail;
 
-    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr &&
-        NVNGXProxy::D3D11_DestroyParameters() != nullptr)
-    {
-        LOG_INFO("calling NVNGXProxy::D3D11_DestroyParameters");
-        auto result = NVNGXProxy::D3D11_DestroyParameters()(InParameters);
-        LOG_INFO("calling NVNGXProxy::D3D11_DestroyParameters result: {0:X}", (UINT) result);
+    const bool success = TryDestroyNGXParameters(InParameters, NVNGXProxy::D3D11_DestroyParameters());
 
-        return result;
-    }
-
-    delete InParameters;
-
-    return NVSDK_NGX_Result_Success;
+    return success ? NVSDK_NGX_Result_Success : NVSDK_NGX_Result_Fail;
 }
 
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetScratchBufferSize(NVSDK_NGX_Feature InFeatureId,

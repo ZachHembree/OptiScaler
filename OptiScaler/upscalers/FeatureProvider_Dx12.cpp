@@ -1,4 +1,4 @@
-#include <pch.h>
+#include "pch.h"
 #include "FeatureProvider_Dx12.h"
 
 #include "Util.h"
@@ -14,92 +14,92 @@
 #include "upscalers/xess/XeSSFeature_Dx12.h"
 #include "FeatureProvider_Dx11.h"
 
-bool FeatureProvider_Dx12::GetFeature(std::string upscalerName, UINT handleId, NVSDK_NGX_Parameter* parameters,
-                                      std::unique_ptr<IFeature_Dx12>* feature)
+bool FeatureProvider_Dx12::GetFeature(
+    std::string_view upscalerName, 
+    UINT handleId, 
+    NVSDK_NGX_Parameter* parameters,
+    std::unique_ptr<IFeature_Dx12>* feature)
 {
+    State& state = State::Instance();
+    Config& cfg = *Config::Instance();
     ScopedSkipHeapCapture skipHeapCapture {};
+    std::string_view config_upscaler(upscalerName);
 
-    do
+    if (upscalerName == "xess")
     {
-        if (upscalerName == "xess")
+        *feature = std::make_unique<XeSSFeatureDx12>(handleId, parameters);
+    }
+    else if (upscalerName == "fsr21")
+    {
+        *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
+    }
+    else if (upscalerName == "fsr22")
+    {
+        *feature = std::make_unique<FSR2FeatureDx12>(handleId, parameters);
+    }
+    else if (upscalerName == "fsr31")
+    {
+        *feature = std::make_unique<FSR31FeatureDx12>(handleId, parameters);
+    }
+    else if (cfg.DLSSEnabled.value_or_default())
+    {
+        if (upscalerName == "dlss" && state.NVNGX_DLSS_Path.has_value())
         {
-            *feature = std::make_unique<XeSSFeatureDx12>(handleId, parameters);
-            break;
+            *feature = std::make_unique<DLSSFeatureDx12>(handleId, parameters);
         }
-        else if (upscalerName == "fsr21")
+        else if (upscalerName == "dlssd" && state.NVNGX_DLSSD_Path.has_value())
         {
-            *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
-            break;
-        }
-        else if (upscalerName == "fsr22")
-        {
-            *feature = std::make_unique<FSR2FeatureDx12>(handleId, parameters);
-            break;
-        }
-        else if (upscalerName == "fsr31")
-        {
-            *feature = std::make_unique<FSR31FeatureDx12>(handleId, parameters);
-            break;
-        }
-
-        if (Config::Instance()->DLSSEnabled.value_or_default())
-        {
-            if (upscalerName == "dlss" && State::Instance().NVNGX_DLSS_Path.has_value())
-            {
-                *feature = std::make_unique<DLSSFeatureDx12>(handleId, parameters);
-                break;
-            }
-            else if (upscalerName == "dlssd" && State::Instance().NVNGX_DLSSD_Path.has_value())
-            {
-                *feature = std::make_unique<DLSSDFeatureDx12>(handleId, parameters);
-                break;
-            }
-            else
-            {
-                *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
-            }
+            *feature = std::make_unique<DLSSDFeatureDx12>(handleId, parameters);
         }
         else
         {
             *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
+            config_upscaler = "fsr21";
         }
-
-    } while (false);
-
-    if (!(*feature)->ModuleLoaded())
-    {
-        (*feature).reset();
-        *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
-        upscalerName = "fsr21";
     }
     else
     {
-        Config::Instance()->Dx12Upscaler = upscalerName;
+        *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
+        config_upscaler = "fsr21";
     }
 
-    auto result = (*feature)->ModuleLoaded();
+    bool loaded = (*feature)->ModuleLoaded();
 
-    if (result)
+    if (!loaded)
     {
-        if (upscalerName == "dlssd")
-            upscalerName = "dlss";
-
-        Config::Instance()->Dx12Upscaler = upscalerName;
+        *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
+        config_upscaler = "fsr21";
+        loaded = true; // Assuming the fallback always loads successfully
     }
 
-    return result;
+    // Handle display name normalization for DLSSD
+    if (config_upscaler == "dlssd")
+        config_upscaler = "dlss";
+
+    cfg.Dx12Upscaler = std::string(config_upscaler);
+
+    return loaded;
 }
 
-bool FeatureProvider_Dx12::ChangeFeature(std::string upscalerName, ID3D12Device* device,
-                                         ID3D12GraphicsCommandList* cmdList, UINT handleId,
-                                         NVSDK_NGX_Parameter* parameters, ContextData<IFeature_Dx12>* contextData)
+bool FeatureProvider_Dx12::ChangeFeature(
+    std::string_view upscalerName, 
+    ID3D12Device* device,                                   
+    ID3D12GraphicsCommandList* cmdList, 
+    UINT handleId,
+    NVSDK_NGX_Parameter* parameters, 
+    ContextData<IFeature_Dx12>* contextData)
 {
-    if (!State::Instance().changeBackend[handleId])
+    State& state = State::Instance();
+    Config& cfg = *Config::Instance();
+
+    if (!state.changeBackend[handleId])
         return false;
 
-    if (State::Instance().newBackend == "" ||
-        (!Config::Instance()->DLSSEnabled.value_or_default() && State::Instance().newBackend == "dlss"))
-        State::Instance().newBackend = Config::Instance()->Dx12Upscaler.value_or_default();
+    const bool isDlssBeingEnabled = !cfg.DLSSEnabled.value_or_default() && state.newBackend == "dlss";
+
+    // If no name or if dlss is being enabled use the configured upscaler name
+    if (state.newBackend == "" || isDlssBeingEnabled)
+        state.newBackend = cfg.Dx12Upscaler.value_or_default();
 
     contextData->changeBackendCounter++;
 
@@ -108,25 +108,24 @@ bool FeatureProvider_Dx12::ChangeFeature(std::string upscalerName, ID3D12Device*
     // first release everything
     if (contextData->changeBackendCounter == 1)
     {
-        if (State::Instance().currentFG != nullptr && State::Instance().currentFG->IsActive() &&
-            State::Instance().activeFgInput == FGInput::Upscaler)
+        if (state.currentFG != nullptr && state.currentFG->IsActive() &&
+            state.activeFgInput == FGInput::Upscaler)
         {
-            State::Instance().currentFG->DestroyFGContext();
-            State::Instance().FGchanged = true;
-            State::Instance().ClearCapturedHudlesses = true;
+            state.currentFG->DestroyFGContext();
+            state.FGchanged = true;
+            state.ClearCapturedHudlesses = true;
         }
 
         if (contextData->feature != nullptr)
         {
-            LOG_INFO("changing backend to {}", State::Instance().newBackend);
+            LOG_INFO("changing backend to {}", state.newBackend);
 
-            auto dc = contextData->feature.get();
+            auto* dc = contextData->feature.get();
+            // Use given params if using DLSS passthrough
+            const std::string_view backend = state.newBackend;
+            const bool isPassthrough = backend == "dlssd" || backend == "dlss";
 
-            if (State::Instance().newBackend != "dlssd" && State::Instance().newBackend != "dlss")
-                contextData->createParams = GetNGXParameters("OptiDx12");
-            else
-                contextData->createParams = parameters;
-
+            contextData->createParams = isPassthrough ? parameters : GetNGXParameters("OptiDx12", false);
             contextData->createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
@@ -134,9 +133,7 @@ bool FeatureProvider_Dx12::ChangeFeature(std::string upscalerName, ID3D12Device*
             contextData->createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
             contextData->createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
-            dc = nullptr;
-
-            if (State::Instance().gameQuirks & GameQuirk::FastFeatureReset)
+            if (state.gameQuirks & GameQuirk::FastFeatureReset)
             {
                 LOG_DEBUG("sleeping before reset of current feature for 100ms (Fast Feature Reset)");
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -150,18 +147,18 @@ bool FeatureProvider_Dx12::ChangeFeature(std::string upscalerName, ID3D12Device*
             contextData->feature.reset();
             contextData->feature = nullptr;
 
-            State::Instance().currentFeature = nullptr;
+            state.currentFeature = nullptr;
         }
-        else
+        else // Clean up state if no feature is set
         {
             LOG_ERROR("can't find handle {0} in Dx12Contexts!", handleId);
 
-            State::Instance().newBackend = "";
-            State::Instance().changeBackend[handleId] = false;
+            state.newBackend = "";
+            state.changeBackend[handleId] = false;
 
             if (contextData->createParams != nullptr)
             {
-                free(contextData->createParams);
+                TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::D3D12_DestroyParameters());
                 contextData->createParams = nullptr;
             }
 
@@ -174,11 +171,10 @@ bool FeatureProvider_Dx12::ChangeFeature(std::string upscalerName, ID3D12Device*
     // create new feature
     if (contextData->changeBackendCounter == 2)
     {
-        LOG_INFO("Creating new {} upscaler", State::Instance().newBackend);
-
+        LOG_INFO("Creating new {} upscaler", state.newBackend);
         contextData->feature.reset();
 
-        if (!GetFeature(State::Instance().newBackend, handleId, contextData->createParams, &contextData->feature))
+        if (!GetFeature(state.newBackend, handleId, contextData->createParams, &contextData->feature))
         {
             LOG_ERROR("Upscaler can't created");
             return false;
@@ -196,45 +192,47 @@ bool FeatureProvider_Dx12::ChangeFeature(std::string upscalerName, ID3D12Device*
 
         if (!initResult)
         {
-            LOG_ERROR("init failed with {0} feature", State::Instance().newBackend);
+            LOG_ERROR("init failed with {0} feature", state.newBackend);
 
-            if (State::Instance().newBackend != "dlssd")
+            if (state.newBackend != "dlssd")
             {
-                if (Config::Instance()->Dx12Upscaler == "dlss")
-                    State::Instance().newBackend = "xess";
+                if (cfg.Dx12Upscaler == "dlss")
+                    state.newBackend = "xess";
                 else
-                    State::Instance().newBackend = "fsr21";
+                    state.newBackend = "fsr21";
             }
             else
             {
                 // Retry DLSSD
-                State::Instance().newBackend = "dlssd";
+                state.newBackend = "dlssd";
             }
 
-            State::Instance().changeBackend[handleId] = true;
+            state.changeBackend[handleId] = true;
             return NVSDK_NGX_Result_Success;
         }
         else
         {
-            LOG_INFO("init successful for {0}, upscaler changed", State::Instance().newBackend);
+            LOG_INFO("init successful for {0}, upscaler changed", state.newBackend);
 
-            State::Instance().newBackend = "";
-            State::Instance().changeBackend[handleId] = false;
+            state.newBackend = "";
+            state.changeBackend[handleId] = false;
         }
 
-        // if opti nvparam release it
+        // If this is an OptiScaler fake NVNGX param table, delete it
         int optiParam = 0;
+
         if (contextData->createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
         {
-            free(contextData->createParams);
+            TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::D3D12_DestroyParameters());
             contextData->createParams = nullptr;
         }
     }
 
     // if initial feature can't be inited
-    State::Instance().currentFeature = contextData->feature.get();
-    if (State::Instance().currentFG != nullptr && State::Instance().activeFgInput == FGInput::Upscaler)
-        State::Instance().currentFG->UpdateTarget();
+    state.currentFeature = contextData->feature.get();
+
+    if (state.currentFG != nullptr && state.activeFgInput == FGInput::Upscaler)
+        state.currentFG->UpdateTarget();
 
     return true;
 }

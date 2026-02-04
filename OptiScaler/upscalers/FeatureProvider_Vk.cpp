@@ -16,6 +16,9 @@
 bool FeatureProvider_Vk::GetFeature(std::string upscalerName, UINT handleId, NVSDK_NGX_Parameter* parameters,
                                     std::unique_ptr<IFeature_Vk>* feature)
 {
+    State& state = State::Instance();
+    Config& cfg = *Config::Instance();
+
     do
     {
         if (upscalerName == "xess")
@@ -39,14 +42,14 @@ bool FeatureProvider_Vk::GetFeature(std::string upscalerName, UINT handleId, NVS
             break;
         }
 
-        if (Config::Instance()->DLSSEnabled.value_or_default())
+        if (cfg.DLSSEnabled.value_or_default())
         {
-            if (upscalerName == "dlss" && State::Instance().NVNGX_DLSS_Path.has_value())
+            if (upscalerName == "dlss" && state.NVNGX_DLSS_Path.has_value())
             {
                 *feature = std::make_unique<DLSSFeatureVk>(handleId, parameters);
                 break;
             }
-            else if (upscalerName == "dlssd" && State::Instance().NVNGX_DLSSD_Path.has_value())
+            else if (upscalerName == "dlssd" && state.NVNGX_DLSSD_Path.has_value())
             {
                 *feature = std::make_unique<DLSSDFeatureVk>(handleId, parameters);
                 break;
@@ -71,7 +74,7 @@ bool FeatureProvider_Vk::GetFeature(std::string upscalerName, UINT handleId, NVS
     }
     else
     {
-        Config::Instance()->VulkanUpscaler = upscalerName;
+        cfg.VulkanUpscaler = upscalerName;
     }
 
     auto result = (*feature)->ModuleLoaded();
@@ -81,7 +84,7 @@ bool FeatureProvider_Vk::GetFeature(std::string upscalerName, UINT handleId, NVS
         if (upscalerName == "dlssd")
             upscalerName = "dlss";
 
-        Config::Instance()->VulkanUpscaler = upscalerName;
+        cfg.VulkanUpscaler = upscalerName;
     }
 
     return result;
@@ -92,9 +95,12 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
                                        PFN_vkGetDeviceProcAddr gdpa, UINT handleId, NVSDK_NGX_Parameter* parameters,
                                        ContextData<IFeature_Vk>* contextData)
 {
-    if (State::Instance().newBackend == "" ||
-        (!Config::Instance()->DLSSEnabled.value_or_default() && State::Instance().newBackend == "dlss"))
-        State::Instance().newBackend = Config::Instance()->VulkanUpscaler.value_or_default();
+    State& state = State::Instance();
+    Config& cfg = *Config::Instance();
+
+    if (state.newBackend == "" ||
+        (!cfg.DLSSEnabled.value_or_default() && state.newBackend == "dlss"))
+        state.newBackend = cfg.VulkanUpscaler.value_or_default();
 
     contextData->changeBackendCounter++;
 
@@ -105,15 +111,14 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
     {
         if (contextData->feature != nullptr)
         {
-            LOG_INFO("changing backend to {0}", State::Instance().newBackend);
+            LOG_INFO("changing backend to {0}", state.newBackend);
 
-            auto dc = contextData->feature.get();
+            auto* dc = contextData->feature.get();
+            // Use given params if using DLSS passthrough
+            const std::string_view backend = state.newBackend;
+            const bool isPassthrough = backend == "dlssd" || backend == "dlss";
 
-            if (State::Instance().newBackend != "dlssd" && State::Instance().newBackend != "dlss")
-                contextData->createParams = GetNGXParameters("OptiVk");
-            else
-                contextData->createParams = parameters;
-
+            contextData->createParams = isPassthrough ? parameters : GetNGXParameters("OptiVk", false);
             contextData->createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
@@ -121,26 +126,24 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
             contextData->createParams->Set(NVSDK_NGX_Parameter_OutHeight, dc->DisplayHeight());
             contextData->createParams->Set(NVSDK_NGX_Parameter_PerfQualityValue, dc->PerfQualityValue());
 
-            dc = nullptr;
-
             LOG_DEBUG("sleeping before reset of current feature for 1000ms");
             std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
             contextData->feature.reset();
             contextData->feature = nullptr;
 
-            State::Instance().currentFeature = nullptr;
+            state.currentFeature = nullptr;
         }
         else
         {
             LOG_ERROR("can't find handle {0} in VkContexts!", handleId);
 
-            State::Instance().newBackend = "";
-            State::Instance().changeBackend[handleId] = false;
+            state.newBackend = "";
+            state.changeBackend[handleId] = false;
 
             if (contextData->createParams != nullptr)
             {
-                free(contextData->createParams);
+                TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::VULKAN_DestroyParameters());
                 contextData->createParams = nullptr;
             }
 
@@ -152,11 +155,11 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
 
     if (contextData->changeBackendCounter == 2)
     {
-        LOG_INFO("Creating new {} upscaler", State::Instance().newBackend);
+        LOG_INFO("Creating new {} upscaler", state.newBackend);
 
         contextData->feature.reset();
 
-        if (!GetFeature(State::Instance().newBackend, handleId, contextData->createParams, &contextData->feature))
+        if (!GetFeature(state.newBackend, handleId, contextData->createParams, &contextData->feature))
         {
             LOG_ERROR("Upscaler can't created");
             return false;
@@ -179,47 +182,48 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
 
         if (!initResult || !contextData->feature->ModuleLoaded())
         {
-            LOG_ERROR("init failed with {0} feature", State::Instance().newBackend);
+            LOG_ERROR("init failed with {0} feature", state.newBackend);
 
-            if (State::Instance().newBackend != "dlssd")
+            if (state.newBackend != "dlssd")
             {
-                if (Config::Instance()->VulkanUpscaler == "dlss")
+                if (cfg.VulkanUpscaler == "dlss")
                 {
-                    State::Instance().newBackend = "xess";
+                    state.newBackend = "xess";
                 }
                 else
                 {
-                    State::Instance().newBackend = "fsr21";
+                    state.newBackend = "fsr21";
                 }
             }
             else
             {
                 // Retry DLSSD
-                State::Instance().newBackend = "dlssd";
+                state.newBackend = "dlssd";
             }
 
-            State::Instance().changeBackend[handleId] = true;
+            state.changeBackend[handleId] = true;
             return NVSDK_NGX_Result_Success;
         }
         else
         {
-            LOG_INFO("init successful for {0}, upscaler changed", State::Instance().newBackend);
+            LOG_INFO("init successful for {0}, upscaler changed", state.newBackend);
 
-            State::Instance().newBackend = "";
-            State::Instance().changeBackend[handleId] = false;
+            state.newBackend = "";
+            state.changeBackend[handleId] = false;
         }
 
-        // if opti nvparam release it
+        // If this is an OptiScaler fake NVNGX param table, delete it
         int optiParam = 0;
+
         if (contextData->createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
         {
-            free(contextData->createParams);
+            TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::VULKAN_DestroyParameters());
             contextData->createParams = nullptr;
         }
     }
 
     // if initial feature can't be inited
-    State::Instance().currentFeature = contextData->feature.get();
+    state.currentFeature = contextData->feature.get();
 
     return true;
 }

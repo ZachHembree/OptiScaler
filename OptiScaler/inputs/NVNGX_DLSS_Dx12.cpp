@@ -58,6 +58,11 @@ static bool contextRendering = false;
 static std::shared_mutex computeSigatureMutex;
 static std::shared_mutex graphSigatureMutex;
 
+static bool GetIsDlssModuleInited()
+{ 
+    return Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::IsDx12Inited(); 
+}
+
 static void hkSetComputeRootSignature(ID3D12GraphicsCommandList* commandList, ID3D12RootSignature* pRootSignature)
 {
     if (Config::Instance()->RestoreComputeSignature.value_or_default() && !contextRendering && commandList != nullptr &&
@@ -431,16 +436,6 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_Shutdown1(ID3D12Device* InDevice)
 #pragma region DLSS Parameter Calls
 
 /**
- * @brief Allocates and populates a preexisting NGX param map.
- */
-static void GetNGXParameters(std::string InName, NVNGX_Parameters& params)
-{
-    params.Name = InName;
-    InitNGXParameters(&params);
-    params.Set("OptiScaler", 1);
-}
-
-/**
  * @brief [Deprecated NGX API] Superceeded by NVSDK_NGX_AllocateParameters and NVSDK_NGX_GetCapabilityParameters.
  *
  * Retrieves a common NVSDK parameter map for providing params to the SDK. The lifetime of this
@@ -454,8 +449,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetParameters(NVSDK_NGX_Parameter
         return NVSDK_NGX_Result_FAIL_InvalidParameter;
 
     // If DLSS is enabled and the real DLSS module is loaded, get native NGX table
-    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr &&
-        NVNGXProxy::D3D12_GetParameters() != nullptr)
+    if (GetIsDlssModuleInited() && NVNGXProxy::D3D12_GetParameters() != nullptr)
     {
         LOG_INFO("Calling NVNGXProxy::D3D12_GetParameters");
         auto result = NVNGXProxy::D3D12_GetParameters()(OutParameters);
@@ -466,13 +460,14 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetParameters(NVSDK_NGX_Parameter
         if (result == NVSDK_NGX_Result_Success)
         {
             InitNGXParameters(*OutParameters);
+            SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVPersistent);
             return NVSDK_NGX_Result_Success;
         }
     }
 
     // Get custom parameters if using custom backend
-    static NVNGX_Parameters oldParams = NVNGX_Parameters();
-    GetNGXParameters("OptiDx12", oldParams);
+    static NVNGX_Parameters oldParams = NVNGX_Parameters("OptiDx12", true);
+    InitNGXParameters(*OutParameters);
     *OutParameters = &oldParams;
 
     return NVSDK_NGX_Result_Success;
@@ -491,8 +486,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
         return NVSDK_NGX_Result_FAIL_InvalidParameter;
 
     // Get native DLSS params if DLSS is enabled and the module is loaded
-    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr &&
-        NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_GetCapabilityParameters() != nullptr)
+    if (GetIsDlssModuleInited() && NVNGXProxy::IsDx12Inited() && NVNGXProxy::D3D12_GetCapabilityParameters() != nullptr)
     {
         LOG_INFO("Calling NVNGXProxy::D3D12_GetCapabilityParameters");
         auto result = NVNGXProxy::D3D12_GetCapabilityParameters()(OutParameters);
@@ -501,14 +495,16 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
 
         if (result == NVSDK_NGX_Result_Success)
         {
+            // Init external NGX table with current configuration and mark as dynamic+external
             InitNGXParameters(*OutParameters);
+            SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVDynamic);
             return NVSDK_NGX_Result_Success;
         }
     }
     
     // Get custom parameters if using custom backend
-    auto& params = *(new NVNGX_Parameters());
-    GetNGXParameters("OptiDx12", params);
+    auto& params = *(new NVNGX_Parameters("OptiDx12", false));
+    InitNGXParameters(&params);
     *OutParameters = &params;
 
     return NVSDK_NGX_Result_Success;
@@ -522,20 +518,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_AllocateParameters(NVSDK_NGX_Para
 {
     LOG_FUNC();
 
-    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr &&
-        NVNGXProxy::D3D12_AllocateParameters() != nullptr)
+    if (GetIsDlssModuleInited() && NVNGXProxy::D3D12_AllocateParameters() != nullptr)
     {
         LOG_INFO("Calling NVNGXProxy::D3D12_AllocateParameters");
         auto result = NVNGXProxy::D3D12_AllocateParameters()(OutParameters);
+
         LOG_INFO("Calling NVNGXProxy::D3D12_AllocateParameters result: {0:X}, ptr: {1:X}", (UINT) result,
                  (UINT64) *OutParameters);
 
         if (result == NVSDK_NGX_Result_Success)
+        {
+            SetNGXParamAllocType(*(*OutParameters), NGX_AllocTypes::NVDynamic);
             return result;
+        }
     }
 
-    auto* params = new NVNGX_Parameters();
-    params->Name = "OptiDx12";
+    auto* params = new NVNGX_Parameters("OptiDx12", false);
     *OutParameters = params;
 
     return NVSDK_NGX_Result_Success;
@@ -558,7 +556,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_PopulateParameters_Impl(NVSDK_NGX
 
 /**
  * @brief Destroys a given input parameter map created with AllocateParameters or GetCapabilityParameters. 
- Must not be called on maps returned by GetParameters().
+ Must not be called on maps returned by GetParameters(). Unsupported tables will not be freed.
  */
 NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Parameter* InParameters)
 {
@@ -567,28 +565,22 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Param
     if (InParameters == nullptr)
         return NVSDK_NGX_Result_Fail;
 
-    if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule() != nullptr &&
-        NVNGXProxy::D3D12_DestroyParameters() != nullptr)
-    {
-        LOG_INFO("Calling NVNGXProxy::D3D12_DestroyParameters");
-        auto result = NVNGXProxy::D3D12_DestroyParameters()(InParameters);
-        LOG_INFO("Calling NVNGXProxy::D3D12_DestroyParameters result: {0:X}", (UINT) result);
+    const bool isUsingDlss = Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::NVNGXModule();
+    const bool success = TryDestroyNGXParameters(InParameters, NVNGXProxy::D3D12_DestroyParameters());
+
+    if (isUsingDlss)
         UpscalerInputsDx12::Reset();
 
-        return NVSDK_NGX_Result_Success;
-    }
-
-    delete InParameters;
-    return NVSDK_NGX_Result_Success;
+    return success ? NVSDK_NGX_Result_Success : NVSDK_NGX_Result_Fail;
 }
 
 #pragma endregion
 
 #pragma region DLSS Feature Calls
 
-static std::string GetUpscalerBackend()
+static std::string_view GetUpscalerBackend()
 {
-    std::string name = "xess"; // Default
+    std::string_view name = "xess"; // Default
 
     if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::IsDx12Inited())
         name = "dlss";
@@ -690,7 +682,8 @@ static NVSDK_NGX_Result TryCreateOptiFeature(
     Dx12Contexts[handleId] = {};
 
     // Retrieve feature implementation
-    if (!FeatureProvider_Dx12::GetFeature(featureName, handleId, InParameters, &Dx12Contexts[handleId].feature))
+    if (!FeatureProvider_Dx12::GetFeature(featureName, handleId, 
+            InParameters, &Dx12Contexts[handleId].feature))
     {
         LOG_ERROR("Failed to retrieve feature implementation for '{}'", featureName);
 
@@ -715,7 +708,7 @@ static NVSDK_NGX_Result TryCreateOptiFeature(
         if (shouldRestore)
             contextRendering = false;
 
-        // Partial cleanup – handle is allocated but context is incomplete
+        // Partial cleanup ï¿½ handle is allocated but context is incomplete
         Dx12Contexts.erase(handleId);
         return NVSDK_NGX_Result_Fail;
     }
@@ -960,6 +953,7 @@ static NVSDK_NGX_Result TryEvaluateOptiFeature(
     const uint32_t handleId = InFeatureHandle->Id;
 
     auto ctxIt = Dx12Contexts.find(handleId);
+
     if (ctxIt == Dx12Contexts.end())
     {
         LOG_WARN("No context found for handle {}", handleId);
@@ -969,17 +963,10 @@ static NVSDK_NGX_Result TryEvaluateOptiFeature(
     ContextData<IFeature_Dx12>& ctxData = ctxIt->second;
     IFeature_Dx12* feature = ctxData.feature.get();
 
-    if (!feature)
-    {
-        LOG_WARN("Feature pointer is null for handle {}", handleId);
-        return NVSDK_NGX_Result_FAIL_FeatureNotFound;
-    }
+    if (feature == nullptr) // Prevent source api name flicker when dlssg is active
+        state.setInputApiName = state.currentInputApiName;
 
-    // Prevent API name flicker (e.g., during backend transitions or DLSSG)
-    if (state.setInputApiName == state.currentInputApiName)
-        state.setInputApiName.clear();
-
-    const std::string_view targetApiName = state.setInputApiName.empty() ? "DLSS" : state.setInputApiName;
+    const std::string_view targetApiName = state.setInputApiName.empty() ? "DLSS" : state.setInputApiName.c_str();
 
     if (state.currentInputApiName != targetApiName)
         state.currentInputApiName = targetApiName;
@@ -995,26 +982,24 @@ static NVSDK_NGX_Result TryEvaluateOptiFeature(
         LOG_INFO("Progress callback provided but unused in synchronous OptiScaler path");
 
     // Resolution change detection (only for upscalers that may require recreation)
-    const bool isFSR31OrLater = feature->Name().starts_with("FSR") && feature->Version() >= feature_version { 3, 1, 0 };
+    if (feature != nullptr)
+    {
+        const bool isFSR31OrLater = feature->Name().starts_with("FSR") && feature->Version() >= feature_version { 3, 1, 0 };
 
-    if (!isFSR31OrLater && feature->UpdateOutputResolution(InParameters))
-        state.changeBackend[handleId] = true;
+        // FSR 3.1 supports upscaleSize that doesn't need reinit to change output resolution
+        if (!isFSR31OrLater && feature->UpdateOutputResolution(InParameters))
+            state.changeBackend[handleId] = true;
+    }
 
     // Backend change or recreation requested
-    if (state.changeBackend.contains(handleId) && state.changeBackend[handleId])
+    if (state.changeBackend[handleId])
     {
-        LOG_INFO("Performing backend change/recreation for handle {} to '{}'", handleId, state.newBackend);
-
         UpscalerInputsDx12::Reset();
         contextRendering = false;
 
-        FeatureProvider_Dx12::ChangeFeature(state.newBackend, D3D12Device, InCmdList, handleId, InParameters, &ctxData);
+        FeatureProvider_Dx12::ChangeFeature(state.newBackend, D3D12Device, 
+            InCmdList, handleId, InParameters, &ctxData);
         feature = ctxData.feature.get();
-
-        state.changeBackend.erase(handleId);
-
-        if (!state.newBackend.empty())
-            state.newBackend.clear();
 
         evalCounter = 0;
         return NVSDK_NGX_Result_Success;
@@ -1030,7 +1015,7 @@ static NVSDK_NGX_Result TryEvaluateOptiFeature(
     }
 
     state.currentFeature = feature;
-
+    
     // Root signature restoration setup
     const bool restoreCompute = cfg.RestoreComputeSignature.value_or_default();
     const bool restoreGraphic = cfg.RestoreGraphicSignature.value_or_default();
@@ -1099,7 +1084,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_EvaluateFeature(
     }
 
     const uint32_t handleId = InFeatureHandle->Id;
-    LOG_DEBUG("EvaluateFeature - Handle: {}, CmdList: {:p}", handleId, (void*) InCmdList);
+    LOG_DEBUG("Handle: {}, CmdList: {:p}", handleId, (void*) InCmdList);
 
     const State& state = State::Instance();
     const Config& cfg = *Config::Instance();

@@ -1,8 +1,6 @@
 #pragma once
 #include "SysUtils.h"
-
 #include "Config.h"
-
 #include <ankerl/unordered_dense.h>
 
 // Use real NVNGX params encapsulated in custom one
@@ -17,6 +15,24 @@
 #else
 #define LOG_PARAM(msg, ...)
 #endif
+
+/** @brief Indicates the lifetime management required by an NGX parameter table. */
+namespace NGX_AllocTypes
+{
+    // Key used to get/set enum from table
+    constexpr std::string_view AllocKey = "OptiScaler.ParamAllocType";
+
+    constexpr uint32_t Unknown = 0;
+    // Standard behavior in modern DLSS. Created with NGX Allocate(). Freed with Destroy().
+    constexpr uint32_t NVDynamic = 1;
+    // Legacy DLSS. Lifetime managed internally by the SDK.
+    constexpr uint32_t NVPersistent = 2;
+    // OptiScaler implementation used internally with new/delete.
+    constexpr uint32_t InternDynamic = 3;
+    // OptiScaler implementation for legacy applications. Must maintain a persistent instance
+    // for the lifetime of the application.
+    constexpr uint32_t InternPersistent = 4;
+}
 
 /// @brief Calculates the resolution scaling ratio override based on the provided quality level and current
 /// configuration.
@@ -670,6 +686,17 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
 {
     std::string Name;
 
+    NVNGX_Parameters(std::string_view name, bool isPersistent) :
+        Name(name)
+    { 
+        // Old flag used to indicate custom table. Obsolete?
+        Set("OptiScaler", 1);
+        // New tracking flag
+        Set(NGX_AllocTypes::AllocKey.data(), isPersistent ? 
+            NGX_AllocTypes::InternPersistent : 
+            NGX_AllocTypes::InternDynamic);
+    }
+
 #ifdef ENABLE_ENCAPSULATED_PARAMS
     NVSDK_NGX_Parameter* OriginalParam = nullptr;
 #endif // ENABLE_ENCAPSULATED_PARAMS
@@ -981,13 +1008,64 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
     }
 };
 
-/// @brief Allocates and populates a new NGX param map.
-inline static NVNGX_Parameters* GetNGXParameters(std::string InName)
+/**
+ * @brief Allocates and populates a new custom NGX param map. The persistence flag indicates
+ * whether the table should be destroyed when NGX DestroyParameters() is used.
+ */
+inline static NVNGX_Parameters* GetNGXParameters(std::string_view name, bool isPersistent)
 {
-    auto params = new NVNGX_Parameters();
-    params->Name = InName;
+    auto params = new NVNGX_Parameters(name, isPersistent);
     InitNGXParameters(params);
-    params->Set("OptiScaler", 1);
-
     return params;
+}
+
+/**
+ * @brief Sets a custom tracking tag to indicate the memory management strategy required by 
+ * the table, indicated by NGX_AllocTypes.
+ */
+inline static void SetNGXParamAllocType(NVSDK_NGX_Parameter& params, uint32_t allocType)
+{
+    params.Set(NGX_AllocTypes::AllocKey.data(), allocType);
+}
+
+/**
+ * @brief Attempts to safely delete an NGX parameter table. Dynamically allocated NGX tables use the NGX API.
+ * OptiScaler tables use delete. Persistent tables are not freed.
+ */
+template <typename PFN_DestroyNGXParameters>
+static inline bool TryDestroyNGXParameters(NVSDK_NGX_Parameter* InParameters, PFN_DestroyNGXParameters NVFree = nullptr)
+{
+    if (InParameters == nullptr)
+        return false;
+
+    uint32_t allocType = NGX_AllocTypes::Unknown;
+    NVSDK_NGX_Result result = InParameters->Get(NGX_AllocTypes::AllocKey.data(), &allocType);
+
+    // Key not set. Either a bug, or the client application called Reset() on the table before destroying.
+    // Derived type unknown if this happens. Not safe to delete. Leaking is the best option.
+    if (result == NVSDK_NGX_Result_Fail)
+    {
+        LOG_WARN("Destroy called on NGX table with unset alloc type. Leaking.");
+        return false;
+    }
+
+    if (allocType == NGX_AllocTypes::NVDynamic)
+    {
+        if (NVFree != nullptr)
+        {
+            LOG_INFO("Calling NVFree");
+            result = NVFree(InParameters);
+            LOG_INFO("Calling NVFree result: {0:X}", (UINT) result);
+            return true;
+        }
+        else
+            return false;
+    }
+    else if (allocType == NGX_AllocTypes::InternDynamic)
+    {
+        delete static_cast<NVNGX_Parameters*>(InParameters);
+        return true;
+    }
+
+    return false;
 }
