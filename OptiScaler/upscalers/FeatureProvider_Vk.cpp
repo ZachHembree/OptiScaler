@@ -13,7 +13,7 @@
 #include "upscalers/fsr31/FSR31Feature_Vk.h"
 #include "upscalers/xess/XeSSFeature_Vk.h"
 
-bool FeatureProvider_Vk::GetFeature(std::string upscalerName, UINT handleId, NVSDK_NGX_Parameter* parameters,
+bool FeatureProvider_Vk::GetFeature(std::string_view upscalerName, UINT handleId, NVSDK_NGX_Parameter* parameters,
                                     std::unique_ptr<IFeature_Vk>* feature)
 {
     State& state = State::Instance();
@@ -21,22 +21,22 @@ bool FeatureProvider_Vk::GetFeature(std::string upscalerName, UINT handleId, NVS
 
     do
     {
-        if (upscalerName == "xess")
+        if (upscalerName == OptiKeys::XeSS)
         {
             *feature = std::make_unique<XeSSFeature_Vk>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "fsr21")
+        else if (upscalerName == OptiKeys::FSR21)
         {
             *feature = std::make_unique<FSR2FeatureVk212>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "fsr22")
+        else if (upscalerName == OptiKeys::FSR22)
         {
             *feature = std::make_unique<FSR2FeatureVk>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "fsr31")
+        else if (upscalerName == OptiKeys::FSR31)
         {
             *feature = std::make_unique<FSR31FeatureVk>(handleId, parameters);
             break;
@@ -44,12 +44,12 @@ bool FeatureProvider_Vk::GetFeature(std::string upscalerName, UINT handleId, NVS
 
         if (cfg.DLSSEnabled.value_or_default())
         {
-            if (upscalerName == "dlss" && state.NVNGX_DLSS_Path.has_value())
+            if (upscalerName == OptiKeys::DLSS && state.NVNGX_DLSS_Path.has_value())
             {
                 *feature = std::make_unique<DLSSFeatureVk>(handleId, parameters);
                 break;
             }
-            else if (upscalerName == "dlssd" && state.NVNGX_DLSSD_Path.has_value())
+            else if (upscalerName == OptiKeys::DLSSD && state.NVNGX_DLSSD_Path.has_value())
             {
                 *feature = std::make_unique<DLSSDFeatureVk>(handleId, parameters);
                 break;
@@ -70,27 +70,27 @@ bool FeatureProvider_Vk::GetFeature(std::string upscalerName, UINT handleId, NVS
     {
         (*feature).reset();
         *feature = std::make_unique<FSR2FeatureVk>(handleId, parameters);
-        upscalerName = "fsr22";
+        upscalerName = OptiKeys::FSR22;
     }
     else
     {
-        cfg.VulkanUpscaler = upscalerName;
+        cfg.VulkanUpscaler = (std::string)upscalerName;
     }
 
     auto result = (*feature)->ModuleLoaded();
 
     if (result)
     {
-        if (upscalerName == "dlssd")
-            upscalerName = "dlss";
+        if (upscalerName == OptiKeys::DLSSD)
+            upscalerName = OptiKeys::DLSS;
 
-        cfg.VulkanUpscaler = upscalerName;
+        cfg.VulkanUpscaler = (std::string)upscalerName;
     }
 
     return result;
 }
 
-bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance instance, VkPhysicalDevice pd,
+bool FeatureProvider_Vk::ChangeFeature(std::string_view upscalerName, VkInstance instance, VkPhysicalDevice pd,
                                        VkDevice device, VkCommandBuffer cmdBuffer, PFN_vkGetInstanceProcAddr gipa,
                                        PFN_vkGetDeviceProcAddr gdpa, UINT handleId, NVSDK_NGX_Parameter* parameters,
                                        ContextData<IFeature_Vk>* contextData)
@@ -99,7 +99,7 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
     Config& cfg = *Config::Instance();
 
     if (state.newBackend == "" ||
-        (!cfg.DLSSEnabled.value_or_default() && state.newBackend == "dlss"))
+        (!cfg.DLSSEnabled.value_or_default() && state.newBackend == OptiKeys::DLSS))
         state.newBackend = cfg.VulkanUpscaler.value_or_default();
 
     contextData->changeBackendCounter++;
@@ -116,9 +116,9 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
             auto* dc = contextData->feature.get();
             // Use given params if using DLSS passthrough
             const std::string_view backend = state.newBackend;
-            const bool isPassthrough = backend == "dlssd" || backend == "dlss";
+            const bool isPassthrough = backend == OptiKeys::DLSSD || backend == OptiKeys::DLSS;
 
-            contextData->createParams = isPassthrough ? parameters : GetNGXParameters("OptiVk", false);
+            contextData->createParams = isPassthrough ? parameters : GetNGXParameters(OptiKeys::VkProvider, false);
             contextData->createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
@@ -184,21 +184,21 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
         {
             LOG_ERROR("init failed with {0} feature", state.newBackend);
 
-            if (state.newBackend != "dlssd")
+            if (state.newBackend != OptiKeys::DLSSD)
             {
-                if (cfg.VulkanUpscaler == "dlss")
+                if (cfg.VulkanUpscaler == OptiKeys::DLSS)
                 {
-                    state.newBackend = "xess";
+                    state.newBackend = OptiKeys::XeSS;
                 }
                 else
                 {
-                    state.newBackend = "fsr21";
+                    state.newBackend = OptiKeys::FSR21;
                 }
             }
             else
             {
                 // Retry DLSSD
-                state.newBackend = "dlssd";
+                state.newBackend = OptiKeys::DLSSD;
             }
 
             state.changeBackend[handleId] = true;
@@ -215,7 +215,7 @@ bool FeatureProvider_Vk::ChangeFeature(std::string upscalerName, VkInstance inst
         // If this is an OptiScaler fake NVNGX param table, delete it
         int optiParam = 0;
 
-        if (contextData->createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
+        if (contextData->createParams->Get(OptiKeys::ProjectID.data(), &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
         {
             TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::VULKAN_DestroyParameters());
             contextData->createParams = nullptr;

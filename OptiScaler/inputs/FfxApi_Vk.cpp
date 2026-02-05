@@ -363,7 +363,7 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext(
-            "OptiScaler", State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(),
+            OptiKeys::ProjectID.data(), State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(),
             State::Instance().VulkanInstance, _vkPhysicalDevice, _vkDevice, vkGetInstanceProcAddr, _vkDeviceProcAddress,
             State::Instance().NVNGX_Version, &fcInfo);
 

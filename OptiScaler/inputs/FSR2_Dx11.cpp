@@ -249,7 +249,7 @@ static FfxErrorCode ffxFsr2ContextCreate_Dx11(FfxFsr2Context* context, FfxFsr2Co
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D11_Init_with_ProjectID(
-            "OptiScaler", state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d11Device, &fcInfo,
+            OptiKeys::ProjectID.data(), state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d11Device, &fcInfo,
             state.NVNGX_Version == 0 ? NVSDK_NGX_Version_API : state.NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)

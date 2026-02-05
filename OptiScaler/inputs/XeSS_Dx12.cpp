@@ -136,7 +136,8 @@ xess_result_t hk_xessD3D12CreateContext(ID3D12Device* pDevice, xess_context_hand
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
-            "OptiScaler", NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, exePath.c_str(), pDevice, &fcInfo,
+            OptiKeys::ProjectID.data(), NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, exePath.c_str(), pDevice,
+            &fcInfo,
             State::Instance().NVNGX_Version == 0 ? NVSDK_NGX_Version_API : State::Instance().NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)

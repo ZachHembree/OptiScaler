@@ -466,7 +466,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetParameters(NVSDK_NGX_Parameter
     }
 
     // Get custom parameters if using custom backend
-    static NVNGX_Parameters oldParams = NVNGX_Parameters("OptiDx12", true);
+    static NVNGX_Parameters oldParams = NVNGX_Parameters(OptiKeys::Dx12Provider, true);
     InitNGXParameters(*OutParameters);
     *OutParameters = &oldParams;
 
@@ -503,7 +503,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_GetCapabilityParameters(NVSDK_NGX
     }
     
     // Get custom parameters if using custom backend
-    auto& params = *(new NVNGX_Parameters("OptiDx12", false));
+    auto& params = *(new NVNGX_Parameters(OptiKeys::Dx12Provider, false));
     InitNGXParameters(&params);
     *OutParameters = &params;
 
@@ -533,7 +533,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_AllocateParameters(NVSDK_NGX_Para
         }
     }
 
-    auto* params = new NVNGX_Parameters("OptiDx12", false);
+    auto* params = new NVNGX_Parameters(OptiKeys::Dx12Provider, false);
     *OutParameters = params;
 
     return NVSDK_NGX_Result_Success;
@@ -580,10 +580,10 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D12_DestroyParameters(NVSDK_NGX_Param
 
 static std::string_view GetUpscalerBackend()
 {
-    std::string_view name = "xess"; // Default
+    std::string_view name = OptiKeys::XeSS; // Default
 
     if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::IsDx12Inited())
-        name = "dlss";
+        name = OptiKeys::DLSS;
 
     if (Config::Instance()->Dx12Upscaler.has_value())
         name = Config::Instance()->Dx12Upscaler.value();
@@ -666,7 +666,7 @@ static NVSDK_NGX_Result TryCreateOptiFeature(
     }
     else
     {
-        featureName = "dlssd";
+        featureName = OptiKeys::DLSSD;
         LOG_INFO("Creating DLSSD (Ray Reconstruction) feature");
     }
 
@@ -727,7 +727,7 @@ static NVSDK_NGX_Result TryCreateOptiFeature(
     else
     {
         LOG_ERROR("Feature '{}' initialization failed falling back to FSR 2.1.2", featureName);
-        state.newBackend = "fsr21";
+        state.newBackend = OptiKeys::FSR21;
         state.changeBackend[handleId] = true;
     }
 
@@ -1006,10 +1006,10 @@ static NVSDK_NGX_Result TryEvaluateOptiFeature(
     }
 
     // Fallback to FSR 2.1.2 if feature failed to initialize and user didn't explicitly request it
-    if (!feature->IsInited() && cfg.Dx12Upscaler.value_or_default() != "fsr21")
+    if (!feature->IsInited() && cfg.Dx12Upscaler.value_or_default() != OptiKeys::FSR21)
     {
         LOG_WARN("Feature '{}' failed to initialize. Falling back to FSR 2.1.2", feature->Name());
-        state.newBackend = "fsr21";
+        state.newBackend = OptiKeys::FSR21;
         state.changeBackend[handleId] = true;
         return NVSDK_NGX_Result_Success;
     }

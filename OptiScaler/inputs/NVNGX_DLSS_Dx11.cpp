@@ -284,7 +284,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetParameters(NVSDK_NGX_Parameter
     }
 
     // Get custom parameters if using custom backend
-    static NVNGX_Parameters oldParams = NVNGX_Parameters("OptiDx11", true);
+    static NVNGX_Parameters oldParams = NVNGX_Parameters(OptiKeys::Dx11Provider, true);
     InitNGXParameters(*OutParameters);
     *OutParameters = &oldParams;
 
@@ -320,7 +320,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_GetCapabilityParameters(NVSDK_NGX
         }
     }
 
-    *OutParameters = new NVNGX_Parameters("OptiDx11", false);
+    *OutParameters = new NVNGX_Parameters(OptiKeys::Dx11Provider, false);
     InitNGXParameters(*OutParameters);
 
     return NVSDK_NGX_Result_Success;
@@ -350,7 +350,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_AllocateParameters(NVSDK_NGX_Para
         }
     }
 
-    *OutParameters = new NVNGX_Parameters("OptiDx11", false);
+    *OutParameters = new NVNGX_Parameters(OptiKeys::Dx11Provider, false);
     InitNGXParameters(*OutParameters);
 
     return NVSDK_NGX_Result_Success;
@@ -421,11 +421,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
     if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
-        std::string upscalerChoice = "fsr22"; // Default FSR 2.2.1
+        std::string_view upscalerChoice = OptiKeys::FSR22; // Default FSR 2.2.1
 
         // If original NVNGX available use DLSS as base upscaler
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::IsDx11Inited())
-            upscalerChoice = "dlss";
+            upscalerChoice = OptiKeys::DLSS;
 
         if (Config::Instance()->Dx11Upscaler.has_value())
             upscalerChoice = Config::Instance()->Dx11Upscaler.value();
@@ -446,7 +446,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
         Dx11Contexts[handleId] = {};
 
-        if (!FeatureProvider_Dx11::GetFeature("dlssd", handleId, InParameters, &Dx11Contexts[handleId].feature))
+        if (!FeatureProvider_Dx11::GetFeature(OptiKeys::DLSSD, handleId, InParameters, &Dx11Contexts[handleId].feature))
         {
             LOG_ERROR("Can't create DLSSD feature");
             return NVSDK_NGX_Result_Fail;
@@ -480,7 +480,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_CreateFeature(ID3D11DeviceContext
 
     LOG_ERROR("CreateFeature failed");
 
-    State::Instance().newBackend = "fsr22";
+    State::Instance().newBackend = OptiKeys::FSR22;
     State::Instance().changeBackend[handleId] = true;
 
     return NVSDK_NGX_Result_Success;
@@ -664,7 +664,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_D3D11_EvaluateFeature(ID3D11DeviceConte
     if (!deviceContext->Evaluate(InDevCtx, InParameters) && !deviceContext->IsInited() &&
         (deviceContext->Name() == "XeSS" || deviceContext->Name() == "DLSS" || deviceContext->Name() == "FSR3 w/Dx12"))
     {
-        State::Instance().newBackend = "fsr22";
+        State::Instance().newBackend = OptiKeys::FSR22;
         State::Instance().changeBackend[handleId] = true;
     }
 

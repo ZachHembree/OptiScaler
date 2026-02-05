@@ -25,42 +25,42 @@ bool FeatureProvider_Dx12::GetFeature(
     ScopedSkipHeapCapture skipHeapCapture {};
     std::string_view config_upscaler(upscalerName);
 
-    if (upscalerName == "xess")
+    if (upscalerName == OptiKeys::XeSS)
     {
         *feature = std::make_unique<XeSSFeatureDx12>(handleId, parameters);
     }
-    else if (upscalerName == "fsr21")
+    else if (upscalerName == OptiKeys::FSR21)
     {
         *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
     }
-    else if (upscalerName == "fsr22")
+    else if (upscalerName == OptiKeys::FSR22)
     {
         *feature = std::make_unique<FSR2FeatureDx12>(handleId, parameters);
     }
-    else if (upscalerName == "fsr31")
+    else if (upscalerName == OptiKeys::FSR31)
     {
         *feature = std::make_unique<FSR31FeatureDx12>(handleId, parameters);
     }
     else if (cfg.DLSSEnabled.value_or_default())
     {
-        if (upscalerName == "dlss" && state.NVNGX_DLSS_Path.has_value())
+        if (upscalerName == OptiKeys::DLSS && state.NVNGX_DLSS_Path.has_value())
         {
             *feature = std::make_unique<DLSSFeatureDx12>(handleId, parameters);
         }
-        else if (upscalerName == "dlssd" && state.NVNGX_DLSSD_Path.has_value())
+        else if (upscalerName == OptiKeys::DLSSD && state.NVNGX_DLSSD_Path.has_value())
         {
             *feature = std::make_unique<DLSSDFeatureDx12>(handleId, parameters);
         }
         else
         {
             *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
-            config_upscaler = "fsr21";
+            config_upscaler = OptiKeys::FSR21;
         }
     }
     else
     {
         *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
-        config_upscaler = "fsr21";
+        config_upscaler = OptiKeys::FSR21;
     }
 
     bool loaded = (*feature)->ModuleLoaded();
@@ -68,15 +68,15 @@ bool FeatureProvider_Dx12::GetFeature(
     if (!loaded)
     {
         *feature = std::make_unique<FSR2FeatureDx12_212>(handleId, parameters);
-        config_upscaler = "fsr21";
+        config_upscaler = OptiKeys::FSR21;
         loaded = true; // Assuming the fallback always loads successfully
     }
 
     // Handle display name normalization for DLSSD
-    if (config_upscaler == "dlssd")
-        config_upscaler = "dlss";
+    if (config_upscaler == OptiKeys::DLSSD)
+        config_upscaler = OptiKeys::DLSS;
 
-    cfg.Dx12Upscaler = std::string(config_upscaler);
+    cfg.Dx12Upscaler = (std::string)config_upscaler;
 
     return loaded;
 }
@@ -95,7 +95,7 @@ bool FeatureProvider_Dx12::ChangeFeature(
     if (!state.changeBackend[handleId])
         return false;
 
-    const bool isDlssBeingEnabled = !cfg.DLSSEnabled.value_or_default() && state.newBackend == "dlss";
+    const bool isDlssBeingEnabled = !cfg.DLSSEnabled.value_or_default() && state.newBackend == OptiKeys::DLSS;
 
     // If no name or if dlss is being enabled use the configured upscaler name
     if (state.newBackend == "" || isDlssBeingEnabled)
@@ -123,9 +123,9 @@ bool FeatureProvider_Dx12::ChangeFeature(
             auto* dc = contextData->feature.get();
             // Use given params if using DLSS passthrough
             const std::string_view backend = state.newBackend;
-            const bool isPassthrough = backend == "dlssd" || backend == "dlss";
+            const bool isPassthrough = backend == OptiKeys::DLSSD || backend == OptiKeys::DLSS;
 
-            contextData->createParams = isPassthrough ? parameters : GetNGXParameters("OptiDx12", false);
+            contextData->createParams = isPassthrough ? parameters : GetNGXParameters(OptiKeys::Dx12Provider, false);
             contextData->createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
@@ -194,17 +194,17 @@ bool FeatureProvider_Dx12::ChangeFeature(
         {
             LOG_ERROR("init failed with {0} feature", state.newBackend);
 
-            if (state.newBackend != "dlssd")
+            if (state.newBackend != OptiKeys::DLSSD)
             {
-                if (cfg.Dx12Upscaler == "dlss")
-                    state.newBackend = "xess";
+                if (cfg.Dx12Upscaler == OptiKeys::DLSS)
+                    state.newBackend = OptiKeys::XeSS;
                 else
-                    state.newBackend = "fsr21";
+                    state.newBackend = OptiKeys::FSR21;
             }
             else
             {
                 // Retry DLSSD
-                state.newBackend = "dlssd";
+                state.newBackend = OptiKeys::DLSSD;
             }
 
             state.changeBackend[handleId] = true;
@@ -221,7 +221,7 @@ bool FeatureProvider_Dx12::ChangeFeature(
         // If this is an OptiScaler fake NVNGX param table, delete it
         int optiParam = 0;
 
-        if (contextData->createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
+        if (contextData->createParams->Get(OptiKeys::ProjectID.data(), &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
         {
             TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::D3D12_DestroyParameters());
             contextData->createParams = nullptr;

@@ -235,7 +235,7 @@ void MenuCommon::ShowResetButton(CustomOptional<bool, NoDefault>* initFlag, std:
 inline void MenuCommon::ReInitUpscaler()
 {
     if (State::Instance().currentFeature->Name() == "DLSSD")
-        State::Instance().newBackend = "dlssd";
+        State::Instance().newBackend = OptiKeys::DLSSD;
     else
         State::Instance().newBackend = currentBackend;
 
@@ -972,31 +972,31 @@ void KeyUp(UINT vKey)
 
 std::string MenuCommon::GetBackendName(std::string* code)
 {
-    if (*code == "fsr21")
+    if (*code == OptiKeys::FSR21)
         return "FSR 2.1.2";
 
-    if (*code == "fsr22")
+    if (*code == OptiKeys::FSR22)
         return "FSR 2.2.1";
 
-    if (*code == "fsr31")
+    if (*code == OptiKeys::FSR31)
         return "FSR 3.X";
 
-    if (*code == "fsr21_12")
+    if (*code == OptiKeys::FSR21_11on12)
         return "FSR 2.1.2 w/Dx12";
 
-    if (*code == "fsr22_12")
+    if (*code == OptiKeys::FSR22_11on12)
         return "FSR 2.2.1 w/Dx12";
 
-    if (*code == "fsr31_12")
+    if (*code == OptiKeys::FSR31_11on12)
         return "FSR 3.X w/Dx12";
 
-    if (*code == "xess")
+    if (*code == OptiKeys::XeSS)
         return "XeSS";
 
-    if (*code == "xess_12")
+    if (*code == OptiKeys::XeSS_11on12)
         return "XeSS w/Dx12";
 
-    if (*code == "dlss")
+    if (*code == OptiKeys::DLSS)
         return "DLSS";
 
     return "????";
@@ -1027,49 +1027,49 @@ void MenuCommon::AddDx11Backends(std::string* code, std::string* name)
     std::string selectedUpscalerName = "";
     std::string fsr3xName = Config::Instance()->Fsr4Update.value_or_default() ? "FSR 3.X/4 w/Dx12" : "FSR 3.X w/Dx12";
 
-    if (State::Instance().newBackend == "fsr22" || (State::Instance().newBackend == "" && *code == "fsr22"))
+    if (State::Instance().newBackend == OptiKeys::FSR22 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR22))
         selectedUpscalerName = "FSR 2.2.1";
-    else if (State::Instance().newBackend == "fsr22_12" || (State::Instance().newBackend == "" && *code == "fsr22_12"))
+    else if (State::Instance().newBackend == OptiKeys::FSR22_11on12 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR22_11on12))
         selectedUpscalerName = "FSR 2.2.1 w/Dx12";
-    else if (State::Instance().newBackend == "fsr21_12" || (State::Instance().newBackend == "" && *code == "fsr21_12"))
+    else if (State::Instance().newBackend == OptiKeys::FSR21_11on12 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR21_11on12))
         selectedUpscalerName = "FSR 2.1.2 w/Dx12";
-    else if (State::Instance().newBackend == "fsr31" || (State::Instance().newBackend == "" && *code == "fsr31"))
+    else if (State::Instance().newBackend == OptiKeys::FSR31 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR31))
         selectedUpscalerName = "FSR 3.X";
-    else if (State::Instance().newBackend == "fsr31_12" || (State::Instance().newBackend == "" && *code == "fsr31_12"))
+    else if (State::Instance().newBackend == OptiKeys::FSR31_11on12 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR31_11on12))
         selectedUpscalerName = fsr3xName;
     else if (Config::Instance()->DLSSEnabled.value_or_default() &&
-             (State::Instance().newBackend == "dlss" || (State::Instance().newBackend == "" && *code == "dlss")))
+             (State::Instance().newBackend == OptiKeys::DLSS || (State::Instance().newBackend == "" && *code == OptiKeys::DLSS)))
         selectedUpscalerName = "DLSS";
-    else if (State::Instance().newBackend == "xess" || (State::Instance().newBackend == "" && *code == "xess"))
+    else if (State::Instance().newBackend == OptiKeys::XeSS || (State::Instance().newBackend == "" && *code == OptiKeys::XeSS))
         selectedUpscalerName = "XeSS";
     else
         selectedUpscalerName = "XeSS w/Dx12";
 
     if (ImGui::BeginCombo("", selectedUpscalerName.c_str()))
     {
-        if (ImGui::Selectable("XeSS", *code == "xess"))
-            State::Instance().newBackend = "xess";
+        if (ImGui::Selectable("XeSS", *code == OptiKeys::XeSS))
+            State::Instance().newBackend = OptiKeys::XeSS;
 
-        if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
-            State::Instance().newBackend = "fsr22";
+        if (ImGui::Selectable("FSR 2.2.1", *code == OptiKeys::FSR22))
+            State::Instance().newBackend = OptiKeys::FSR22;
 
-        if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
-            State::Instance().newBackend = "fsr31";
+        if (ImGui::Selectable("FSR 3.X", *code == OptiKeys::FSR31))
+            State::Instance().newBackend = OptiKeys::FSR31;
 
-        if (ImGui::Selectable("XeSS w/Dx12", *code == "xess_12"))
-            State::Instance().newBackend = "xess_12";
+        if (ImGui::Selectable("XeSS w/Dx12", *code == OptiKeys::XeSS_11on12))
+            State::Instance().newBackend = OptiKeys::XeSS_11on12;
 
-        if (ImGui::Selectable("FSR 2.1.2 w/Dx12", *code == "fsr21_12"))
-            State::Instance().newBackend = "fsr21_12";
+        if (ImGui::Selectable("FSR 2.1.2 w/Dx12", *code == OptiKeys::FSR21_11on12))
+            State::Instance().newBackend = OptiKeys::FSR21_11on12;
 
-        if (ImGui::Selectable("FSR 2.2.1 w/Dx12", *code == "fsr22_12"))
-            State::Instance().newBackend = "fsr22_12";
+        if (ImGui::Selectable("FSR 2.2.1 w/Dx12", *code == OptiKeys::FSR22_11on12))
+            State::Instance().newBackend = OptiKeys::FSR22_11on12;
 
-        if (ImGui::Selectable(fsr3xName.c_str(), *code == "fsr31_12"))
-            State::Instance().newBackend = "fsr31_12";
+        if (ImGui::Selectable(fsr3xName.c_str(), *code == OptiKeys::FSR31_11on12))
+            State::Instance().newBackend = OptiKeys::FSR31_11on12;
 
-        if (Config::Instance()->DLSSEnabled.value_or_default() && ImGui::Selectable("DLSS", *code == "dlss"))
-            State::Instance().newBackend = "dlss";
+        if (Config::Instance()->DLSSEnabled.value_or_default() && ImGui::Selectable("DLSS", *code == OptiKeys::DLSS))
+            State::Instance().newBackend = OptiKeys::DLSS;
 
         ImGui::EndCombo();
     }
@@ -1080,34 +1080,34 @@ void MenuCommon::AddDx12Backends(std::string* code, std::string* name)
     std::string selectedUpscalerName = "";
     std::string fsr3xName = Config::Instance()->Fsr4Update.value_or_default() ? "FSR 3.X/4" : "FSR 3.X";
 
-    if (State::Instance().newBackend == "fsr21" || (State::Instance().newBackend == "" && *code == "fsr21"))
+    if (State::Instance().newBackend == OptiKeys::FSR21 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR21))
         selectedUpscalerName = "FSR 2.1.2";
-    else if (State::Instance().newBackend == "fsr22" || (State::Instance().newBackend == "" && *code == "fsr22"))
+    else if (State::Instance().newBackend == OptiKeys::FSR22 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR22))
         selectedUpscalerName = "FSR 2.2.1";
-    else if (State::Instance().newBackend == "fsr31" || (State::Instance().newBackend == "" && *code == "fsr31"))
+    else if (State::Instance().newBackend == OptiKeys::FSR31 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR31))
         selectedUpscalerName = fsr3xName;
     else if (Config::Instance()->DLSSEnabled.value_or_default() &&
-             (State::Instance().newBackend == "dlss" || (State::Instance().newBackend == "" && *code == "dlss")))
+             (State::Instance().newBackend == OptiKeys::DLSS || (State::Instance().newBackend == "" && *code == OptiKeys::DLSS)))
         selectedUpscalerName = "DLSS";
     else
         selectedUpscalerName = "XeSS";
 
     if (ImGui::BeginCombo("", selectedUpscalerName.c_str()))
     {
-        if (ImGui::Selectable("XeSS", *code == "xess"))
-            State::Instance().newBackend = "xess";
+        if (ImGui::Selectable("XeSS", *code == OptiKeys::XeSS))
+            State::Instance().newBackend = OptiKeys::XeSS;
 
-        if (ImGui::Selectable("FSR 2.1.2", *code == "fsr21"))
-            State::Instance().newBackend = "fsr21";
+        if (ImGui::Selectable("FSR 2.1.2", *code == OptiKeys::FSR21))
+            State::Instance().newBackend = OptiKeys::FSR21;
 
-        if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
-            State::Instance().newBackend = "fsr22";
+        if (ImGui::Selectable("FSR 2.2.1", *code == OptiKeys::FSR22))
+            State::Instance().newBackend = OptiKeys::FSR22;
 
-        if (ImGui::Selectable(fsr3xName.c_str(), *code == "fsr31"))
-            State::Instance().newBackend = "fsr31";
+        if (ImGui::Selectable(fsr3xName.c_str(), *code == OptiKeys::FSR31))
+            State::Instance().newBackend = OptiKeys::FSR31;
 
-        if (Config::Instance()->DLSSEnabled.value_or_default() && ImGui::Selectable("DLSS", *code == "dlss"))
-            State::Instance().newBackend = "dlss";
+        if (Config::Instance()->DLSSEnabled.value_or_default() && ImGui::Selectable("DLSS", *code == OptiKeys::DLSS))
+            State::Instance().newBackend = OptiKeys::DLSS;
 
         ImGui::EndCombo();
     }
@@ -1117,34 +1117,34 @@ void MenuCommon::AddVulkanBackends(std::string* code, std::string* name)
 {
     std::string selectedUpscalerName = "";
 
-    if (State::Instance().newBackend == "fsr21" || (State::Instance().newBackend == "" && *code == "fsr21"))
+    if (State::Instance().newBackend == OptiKeys::FSR21 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR21))
         selectedUpscalerName = "FSR 2.1.2";
-    else if (State::Instance().newBackend == "fsr31" || (State::Instance().newBackend == "" && *code == "fsr31"))
+    else if (State::Instance().newBackend == OptiKeys::FSR31 || (State::Instance().newBackend == "" && *code == OptiKeys::FSR31))
         selectedUpscalerName = "FSR 3.X";
-    else if (State::Instance().newBackend == "xess" || (State::Instance().newBackend == "" && *code == "xess"))
+    else if (State::Instance().newBackend == OptiKeys::XeSS || (State::Instance().newBackend == "" && *code == OptiKeys::XeSS))
         selectedUpscalerName = "XeSS";
     else if (Config::Instance()->DLSSEnabled.value_or_default() &&
-             (State::Instance().newBackend == "dlss" || (State::Instance().newBackend == "" && *code == "dlss")))
+             (State::Instance().newBackend == OptiKeys::DLSS || (State::Instance().newBackend == "" && *code == OptiKeys::DLSS)))
         selectedUpscalerName = "DLSS";
     else
         selectedUpscalerName = "FSR 2.2.1";
 
     if (ImGui::BeginCombo("", selectedUpscalerName.c_str()))
     {
-        if (ImGui::Selectable("XeSS", *code == "xess"))
-            State::Instance().newBackend = "xess";
+        if (ImGui::Selectable("XeSS", *code == OptiKeys::XeSS))
+            State::Instance().newBackend = OptiKeys::XeSS;
 
-        if (ImGui::Selectable("FSR 2.1.2", *code == "fsr21"))
-            State::Instance().newBackend = "fsr21";
+        if (ImGui::Selectable("FSR 2.1.2", *code == OptiKeys::FSR21))
+            State::Instance().newBackend = OptiKeys::FSR21;
 
-        if (ImGui::Selectable("FSR 2.2.1", *code == "fsr22"))
-            State::Instance().newBackend = "fsr22";
+        if (ImGui::Selectable("FSR 2.2.1", *code == OptiKeys::FSR22))
+            State::Instance().newBackend = OptiKeys::FSR22;
 
-        if (ImGui::Selectable("FSR 3.X", *code == "fsr31"))
-            State::Instance().newBackend = "fsr31";
+        if (ImGui::Selectable("FSR 3.X", *code == OptiKeys::FSR31))
+            State::Instance().newBackend = OptiKeys::FSR31;
 
-        if (Config::Instance()->DLSSEnabled.value_or_default() && ImGui::Selectable("DLSS", *code == "dlss"))
-            State::Instance().newBackend = "dlss";
+        if (Config::Instance()->DLSSEnabled.value_or_default() && ImGui::Selectable("DLSS", *code == OptiKeys::DLSS))
+            State::Instance().newBackend = OptiKeys::DLSS;
 
         ImGui::EndCombo();
     }
@@ -2445,7 +2445,7 @@ bool MenuCommon::RenderMenu()
                         if (ImGui::Button("Change Upscaler##2") && state.newBackend != "" &&
                             state.newBackend != currentBackend)
                         {
-                            if (state.newBackend == "xess")
+                            if (state.newBackend == OptiKeys::XeSS)
                             {
                                 // Reseting them for xess
                                 config->DisableReactiveMask.reset();
@@ -2477,9 +2477,9 @@ bool MenuCommon::RenderMenu()
                 if (currentFeature != nullptr && !currentFeature->IsFrozen())
                 {
                     // Dx11 with Dx12
-                    if (state.api == DX11 && config->Dx11Upscaler.value_or_default() != "fsr22" &&
-                        config->Dx11Upscaler.value_or_default() != "dlss" &&
-                        config->Dx11Upscaler.value_or_default() != "fsr31")
+                    if (state.api == DX11 && config->Dx11Upscaler.value_or_default() != OptiKeys::FSR22 &&
+                        config->Dx11Upscaler.value_or_default() != OptiKeys::DLSS &&
+                        config->Dx11Upscaler.value_or_default() != OptiKeys::FSR31)
                     {
                         ImGui::Spacing();
                         if (auto ch = ScopedCollapsingHeader("Dx11 with Dx12 Settings"); ch.IsHeaderOpen())
@@ -2499,7 +2499,7 @@ bool MenuCommon::RenderMenu()
                     // UPSCALER SPECIFIC -----------------------------
 
                     // XeSS -----------------------------
-                    if (currentBackend == "xess" && state.currentFeature->Name() != "DLSSD")
+                    if (currentBackend == OptiKeys::XeSS && state.currentFeature->Name() != "DLSSD")
                     {
                         ImGui::Spacing();
                         if (auto ch = ScopedCollapsingHeader("XeSS Settings"); ch.IsHeaderOpen())
@@ -2557,15 +2557,15 @@ bool MenuCommon::RenderMenu()
 
                     // FFX -----------------
                     if (currentBackend.rfind("fsr", 0) == 0 && state.currentFeature->Name() != "DLSSD" &&
-                        (currentBackend == "fsr31" || currentBackend == "fsr31_12"))
+                        (currentBackend == OptiKeys::FSR31 || currentBackend == OptiKeys::FSR31_11on12))
                     {
                         ImGui::SeparatorText("FFX Settings");
 
                         if (_ffxUpscalerIndex < 0)
                             _ffxUpscalerIndex = config->FfxUpscalerIndex.value_or_default();
 
-                        if (currentBackend == "fsr31" ||
-                            currentBackend == "fsr31_12" && state.ffxUpscalerVersionNames.size() > 0)
+                        if (currentBackend == OptiKeys::FSR31 ||
+                            currentBackend == OptiKeys::FSR31_11on12 && state.ffxUpscalerVersionNames.size() > 0)
                         {
                             ImGui::PushItemWidth(135.0f * config->MenuScale.value_or_default());
 
@@ -2874,7 +2874,7 @@ bool MenuCommon::RenderMenu()
                     }
 
                     // DLSS -----------------
-                    if ((config->DLSSEnabled.value_or_default() && currentBackend == "dlss" &&
+                    if ((config->DLSSEnabled.value_or_default() && currentBackend == OptiKeys::DLSS &&
                          state.currentFeature->Version().major > 2) ||
                         state.currentFeature->Name() == "DLSSD")
                     {
@@ -2942,7 +2942,7 @@ bool MenuCommon::RenderMenu()
                         if (ImGui::Button("Apply Changes"))
                         {
                             if (usesDlssd)
-                                state.newBackend = "dlssd";
+                                state.newBackend = OptiKeys::DLSSD;
                             else
                                 state.newBackend = currentBackend;
 
@@ -4486,7 +4486,7 @@ bool MenuCommon::RenderMenu()
                     {
                         config->OverrideSharpness = overrideSharpness;
 
-                        if (currentBackend == "dlss" && state.currentFeature->Version().major < 3)
+                        if (currentBackend == OptiKeys::DLSS && state.currentFeature->Version().major < 3)
                         {
                             state.newBackend = currentBackend;
                             MARK_ALL_BACKENDS_CHANGED();
@@ -4513,8 +4513,8 @@ bool MenuCommon::RenderMenu()
                         // xess or dlss version >= 2.5.1
                         constexpr feature_version requiredDlssVersion = { 2, 5, 1 };
                         rcasEnabled =
-                            (currentBackend == "xess" ||
-                             (currentBackend == "dlss" && state.currentFeature->Version() >= requiredDlssVersion));
+                            (currentBackend == OptiKeys::XeSS ||
+                             (currentBackend == OptiKeys::DLSS && state.currentFeature->Version() >= requiredDlssVersion));
 
                         if (bool rcas = config->RcasEnabled.value_or(rcasEnabled);
                             ImGui::Checkbox("Enable RCAS", &rcas))
@@ -4677,7 +4677,7 @@ bool MenuCommon::RenderMenu()
                                 _ssDownsampler = config->OutputScalingDownscaler.value_or_default();
                             }
 
-                            ImGui::BeginDisabled((currentBackend == "xess" || currentBackend == "dlss") &&
+                            ImGui::BeginDisabled((currentBackend == OptiKeys::XeSS || currentBackend == OptiKeys::DLSS) &&
                                                  state.currentFeature->RenderWidth() >
                                                      state.currentFeature->DisplayWidth());
                             ImGui::Checkbox("Enable", &_ssEnabled);
@@ -4728,7 +4728,7 @@ bool MenuCommon::RenderMenu()
                                 _ssDownsampler = config->OutputScalingDownscaler.value_or_default();
 
                                 if (state.currentFeature->Name() == "DLSSD")
-                                    state.newBackend = "dlssd";
+                                    state.newBackend = OptiKeys::DLSSD;
                                 else
                                     state.newBackend = currentBackend;
 
@@ -4763,7 +4763,7 @@ bool MenuCommon::RenderMenu()
                         ImGui::TableNextColumn();
 
                         // AutoExposure is always enabled for XeSS with native Dx11
-                        bool autoExposureDisabled = state.api == API::DX11 && currentBackend == "xess";
+                        bool autoExposureDisabled = state.api == API::DX11 && currentBackend == OptiKeys::XeSS;
                         ImGui::BeginDisabled(autoExposureDisabled);
 
                         if (bool autoExposure = currentFeature->AutoExposure();
@@ -4784,8 +4784,8 @@ bool MenuCommon::RenderMenu()
                         ImGui::BeginDisabled(!accessToReactiveMask);
 
                         bool canUseReactiveMask =
-                            accessToReactiveMask && currentBackend != "dlss" &&
-                            (currentBackend != "xess" || currentFeature->Version() >= feature_version { 2, 0, 1 });
+                            accessToReactiveMask && currentBackend != OptiKeys::DLSS &&
+                            (currentBackend != OptiKeys::XeSS || currentFeature->Version() >= feature_version { 2, 0, 1 });
 
                         bool disableReactiveMask = config->DisableReactiveMask.value_or(!canUseReactiveMask);
 
@@ -4793,7 +4793,7 @@ bool MenuCommon::RenderMenu()
                         {
                             config->DisableReactiveMask = disableReactiveMask;
 
-                            if (currentBackend == "xess")
+                            if (currentBackend == OptiKeys::XeSS)
                             {
                                 state.newBackend = currentBackend;
                                 MARK_ALL_BACKENDS_CHANGED();
@@ -4872,11 +4872,11 @@ bool MenuCommon::RenderMenu()
                                 ImGui::EndTable();
                             }
 
-                            if (state.currentFeature->AccessToReactiveMask() && currentBackend != "dlss")
+                            if (state.currentFeature->AccessToReactiveMask() && currentBackend != OptiKeys::DLSS)
                             {
-                                ImGui::BeginDisabled(config->DisableReactiveMask.value_or(currentBackend == "xess"));
+                                ImGui::BeginDisabled(config->DisableReactiveMask.value_or(currentBackend == OptiKeys::XeSS));
 
-                                bool binaryMask = state.api == Vulkan || currentBackend == "xess";
+                                bool binaryMask = state.api == Vulkan || currentBackend == OptiKeys::XeSS;
                                 auto defaultBias = binaryMask ? 0.0f : 0.45f;
                                 auto maskBias = config->DlssReactiveMaskBias.value_or(defaultBias);
 
@@ -4967,7 +4967,7 @@ bool MenuCommon::RenderMenu()
                     }
 
                     // Non-DLSS hotfixes -----------------------------
-                    if (currentFeature != nullptr && !currentFeature->IsFrozen() && currentBackend != "dlss")
+                    if (currentFeature != nullptr && !currentFeature->IsFrozen() && currentBackend != OptiKeys::DLSS)
                     {
                         // BARRIERS -----------------------------
                         ImGui::Spacing();

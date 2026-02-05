@@ -337,7 +337,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetParameters(NVSDK_NGX_Paramete
     }
 
     // Get custom parameters if using custom backend
-    static NVNGX_Parameters oldParams = NVNGX_Parameters("OptiVk", true);
+    static NVNGX_Parameters oldParams = NVNGX_Parameters(OptiKeys::VkProvider, true);
     InitNGXParameters(*OutParameters);
     *OutParameters = &oldParams;
 
@@ -543,7 +543,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_AllocateParameters(NVSDK_NGX_Par
         }
     }
 
-    auto* params = new NVNGX_Parameters("OptiVk", false);
+    auto* params = new NVNGX_Parameters(OptiKeys::VkProvider, false);
     *OutParameters = params;
 
     return NVSDK_NGX_Result_Success;
@@ -625,7 +625,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_GetCapabilityParameters(NVSDK_NG
     }
 
     // Get custom parameters if using custom backend
-    auto& params = *(new NVNGX_Parameters("OptiVk", false));
+    auto& params = *(new NVNGX_Parameters(OptiKeys::VkProvider, false));
     InitNGXParameters(&params);
     *OutParameters = &params;
 
@@ -712,11 +712,11 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
     if (InFeatureID == NVSDK_NGX_Feature_SuperSampling)
     {
-        std::string upscalerChoice = "fsr22"; // Default XeSS
+        std::string_view upscalerChoice = OptiKeys::FSR22; // Default XeSS
 
         // If original NVNGX available use DLSS as base upscaler
         if (Config::Instance()->DLSSEnabled.value_or_default() && NVNGXProxy::IsVulkanInited())
-            upscalerChoice = "dlss";
+            upscalerChoice = OptiKeys::DLSS;
 
         if (Config::Instance()->VulkanUpscaler.has_value())
             upscalerChoice = Config::Instance()->VulkanUpscaler.value();
@@ -737,7 +737,7 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_CreateFeature1(VkDevice InDevice
 
         VkContexts[handleId] = {};
 
-        if (!FeatureProvider_Vk::GetFeature("dlssd", handleId, InParameters, &VkContexts[handleId].feature))
+        if (!FeatureProvider_Vk::GetFeature(OptiKeys::DLSSD, handleId, InParameters, &VkContexts[handleId].feature))
         {
             LOG_ERROR("DLSSD can't created");
             return NVSDK_NGX_Result_Fail;
@@ -929,9 +929,9 @@ NVSDK_NGX_API NVSDK_NGX_Result NVSDK_NGX_VULKAN_EvaluateFeature(VkCommandBuffer 
     deviceContext = VkContexts[handleId].feature.get();
     State::Instance().currentFeature = deviceContext;
 
-    if (!deviceContext->IsInited() && Config::Instance()->VulkanUpscaler.value_or_default() != "fsr22")
+    if (!deviceContext->IsInited() && Config::Instance()->VulkanUpscaler.value_or_default() != OptiKeys::FSR22)
     {
-        State::Instance().newBackend = "fsr22";
+        State::Instance().newBackend = OptiKeys::FSR22;
         State::Instance().changeBackend[handleId] = true;
         return NVSDK_NGX_Result_Success;
     }

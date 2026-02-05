@@ -16,7 +16,7 @@
 #include "upscalers/xess/XeSSFeature_Dx11.h"
 #include "upscalers/xess/XeSSFeature_Dx11on12.h"
 
-bool FeatureProvider_Dx11::GetFeature(std::string upscalerName, UINT handleId, NVSDK_NGX_Parameter* parameters,
+bool FeatureProvider_Dx11::GetFeature(std::string_view upscalerName, UINT handleId, NVSDK_NGX_Parameter* parameters,
                                       std::unique_ptr<IFeature_Dx11>* feature)
 {
     State& state = State::Instance();
@@ -24,37 +24,37 @@ bool FeatureProvider_Dx11::GetFeature(std::string upscalerName, UINT handleId, N
 
     do
     {
-        if (upscalerName == "xess")
+        if (upscalerName == OptiKeys::XeSS)
         {
             *feature = std::make_unique<XeSSFeature_Dx11>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "xess_12")
+        else if (upscalerName == OptiKeys::XeSS_11on12)
         {
             *feature = std::make_unique<XeSSFeatureDx11on12>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "fsr21_12")
+        else if (upscalerName == OptiKeys::FSR21_11on12)
         {
             *feature = std::make_unique<FSR2FeatureDx11on12_212>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "fsr22")
+        else if (upscalerName == OptiKeys::FSR22)
         {
             *feature = std::make_unique<FSR2FeatureDx11>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "fsr22_12")
+        else if (upscalerName == OptiKeys::FSR22_11on12)
         {
             *feature = std::make_unique<FSR2FeatureDx11on12>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "fsr31")
+        else if (upscalerName == OptiKeys::FSR31)
         {
             *feature = std::make_unique<FSR31FeatureDx11>(handleId, parameters);
             break;
         }
-        else if (upscalerName == "fsr31_12")
+        else if (upscalerName == OptiKeys::FSR31_11on12)
         {
             *feature = std::make_unique<FSR31FeatureDx11on12>(handleId, parameters);
             break;
@@ -62,12 +62,12 @@ bool FeatureProvider_Dx11::GetFeature(std::string upscalerName, UINT handleId, N
 
         if (cfg.DLSSEnabled.value_or_default())
         {
-            if (upscalerName == "dlss" && state.NVNGX_DLSS_Path.has_value())
+            if (upscalerName == OptiKeys::DLSS && state.NVNGX_DLSS_Path.has_value())
             {
                 *feature = std::make_unique<DLSSFeatureDx11>(handleId, parameters);
                 break;
             }
-            else if (upscalerName == "dlssd" && state.NVNGX_DLSSD_Path.has_value())
+            else if (upscalerName == OptiKeys::DLSSD && state.NVNGX_DLSSD_Path.has_value())
             {
                 *feature = std::make_unique<DLSSDFeatureDx11>(handleId, parameters);
                 break;
@@ -88,28 +88,28 @@ bool FeatureProvider_Dx11::GetFeature(std::string upscalerName, UINT handleId, N
     {
         (*feature).reset();
         *feature = std::make_unique<FSR2FeatureDx11>(handleId, parameters);
-        upscalerName = "fsr22";
+        upscalerName = OptiKeys::FSR22;
     }
     else
     {
-        cfg.Dx11Upscaler = upscalerName;
+        cfg.Dx11Upscaler = (std::string)upscalerName;
     }
 
     auto result = (*feature)->ModuleLoaded();
 
     if (result)
     {
-        if (upscalerName == "dlssd")
-            upscalerName = "dlss";
+        if (upscalerName == OptiKeys::DLSSD)
+            upscalerName = OptiKeys::DLSS;
 
-        cfg.Dx11Upscaler = upscalerName;
+        cfg.Dx11Upscaler = (std::string)upscalerName;
     }
 
     return result;
 }
 
 bool FeatureProvider_Dx11::ChangeFeature(
-    std::string upscalerName, 
+    std::string_view upscalerName, 
     ID3D11Device* device,
     ID3D11DeviceContext* devContext, 
     UINT handleId,
@@ -119,7 +119,7 @@ bool FeatureProvider_Dx11::ChangeFeature(
     State& state = State::Instance();
     Config& cfg = *Config::Instance();
 
-    if (state.newBackend == "" ||  (!cfg.DLSSEnabled.value_or_default() && state.newBackend == "dlss"))
+    if (state.newBackend == "" ||  (!cfg.DLSSEnabled.value_or_default() && state.newBackend == OptiKeys::DLSS))
         state.newBackend = cfg.Dx11Upscaler.value_or_default();
 
     contextData->changeBackendCounter++;
@@ -134,9 +134,9 @@ bool FeatureProvider_Dx11::ChangeFeature(
             auto* dc = contextData->feature.get();
             // Use given params if using DLSS passthrough
             const std::string_view backend = state.newBackend;
-            const bool isPassthrough = backend == "dlssd" || backend == "dlss";
+            const bool isPassthrough = backend == OptiKeys::DLSSD || backend == OptiKeys::DLSS;
 
-            contextData->createParams = isPassthrough ? parameters : GetNGXParameters("OptiDx11", false);
+            contextData->createParams = isPassthrough ? parameters : GetNGXParameters(OptiKeys::Dx11Provider, false);
             contextData->createParams->Set(NVSDK_NGX_Parameter_DLSS_Feature_Create_Flags, dc->GetFeatureFlags());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Width, dc->RenderWidth());
             contextData->createParams->Set(NVSDK_NGX_Parameter_Height, dc->RenderHeight());
@@ -203,9 +203,9 @@ bool FeatureProvider_Dx11::ChangeFeature(
         {
             LOG_ERROR("init failed with {0} feature", state.newBackend);
 
-            if (state.newBackend != "dlssd")
+            if (state.newBackend != OptiKeys::DLSSD)
             {
-                state.newBackend = "fsr22";
+                state.newBackend = OptiKeys::FSR22;
                 state.changeBackend[handleId] = true;
             }
             else
@@ -225,7 +225,9 @@ bool FeatureProvider_Dx11::ChangeFeature(
 
         // if opti nvparam release it
         int optiParam = 0;
-        if (contextData->createParams->Get("OptiScaler", &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
+
+        if (contextData->createParams->Get(OptiKeys::ProjectID.data(), &optiParam) == NVSDK_NGX_Result_Success &&
+            optiParam == 1)
         {
             TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::D3D11_DestroyParameters());
             contextData->createParams = nullptr;

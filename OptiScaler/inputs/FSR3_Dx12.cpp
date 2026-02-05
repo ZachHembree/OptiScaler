@@ -293,7 +293,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
-            "OptiScaler", state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
+            OptiKeys::ProjectID.data(), state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
             state.NVNGX_Version == 0 ? NVSDK_NGX_Version_API : state.NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
@@ -524,7 +524,7 @@ ffxFsr3ContextCreate_Pattern_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext,
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
-            "OptiScaler", state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
+            OptiKeys::ProjectID.data(), state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
             state.NVNGX_Version == 0 ? NVSDK_NGX_Version_API : state.NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)

@@ -690,7 +690,7 @@ struct NVNGX_Parameters : public NVSDK_NGX_Parameter
         Name(name)
     { 
         // Old flag used to indicate custom table. Obsolete?
-        Set("OptiScaler", 1);
+        Set(OptiKeys::ProjectID.data(), 1);
         // New tracking flag
         Set(NGX_AllocTypes::AllocKey.data(), isPersistent ? 
             NGX_AllocTypes::InternPersistent : 

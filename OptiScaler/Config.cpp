@@ -703,9 +703,9 @@ bool Config::SaveIni()
 {
     // Upscalers
     {
-        ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_for_config_or("auto").c_str());
-        ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_for_config_or("auto").c_str());
-        ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_for_config_or("auto").c_str());
+        ini.SetValue("Upscalers", "Dx11Upscaler", Instance()->Dx11Upscaler.value_for_config_or("auto").data());
+        ini.SetValue("Upscalers", "Dx12Upscaler", Instance()->Dx12Upscaler.value_for_config_or("auto").data());
+        ini.SetValue("Upscalers", "VulkanUpscaler", Instance()->VulkanUpscaler.value_for_config_or("auto").data());
     }
 
     // Frame Generation
