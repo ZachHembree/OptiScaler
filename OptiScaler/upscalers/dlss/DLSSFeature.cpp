@@ -267,7 +267,7 @@ void DLSSFeature::ReadVersion()
         LOG_WARN("Failed to get version using NVSDK_NGX_GetSnippetVersion!");
 }
 
-DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId, InParameters)
+DLSSFeature::DLSSFeature(unsigned int handleId, NVSDK_NGX_Parameter* InParameters) : IFeature(handleId)
 {
     LOG_FUNC();
 

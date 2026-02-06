@@ -21,8 +21,8 @@
     } while ((void) 0, 0);
 
 FSR31FeatureDx11::FSR31FeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : FSR31Feature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters),
-      IFeature(InHandleId, InParameters)
+    : FSR31Feature(InHandleId, InParameters),
+      IFeature(InHandleId)
 {
     _moduleLoaded = true;
 }

@@ -607,7 +607,7 @@ bool XeSSFeature_Dx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
 }
 
 XeSSFeature_Dx11::XeSSFeature_Dx11(unsigned int handleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(handleId, InParameters), IFeature_Dx11(handleId, InParameters)
+    : IFeature(handleId)
 {
     _initParameters = SetInitParameters(InParameters);
 

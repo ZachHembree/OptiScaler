@@ -280,7 +280,7 @@ bool DLSSDFeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 }
 
 DLSSDFeatureVk::DLSSDFeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(InHandleId, InParameters), IFeature_Vk(InHandleId, InParameters), DLSSDFeature(InHandleId, InParameters)
+    : IFeature(InHandleId), DLSSDFeature(InHandleId, InParameters)
 {
     if (NVNGXProxy::NVNGXModule() == nullptr)
     {

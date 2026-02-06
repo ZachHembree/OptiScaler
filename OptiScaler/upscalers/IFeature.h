@@ -72,6 +72,8 @@ class IFeature
     bool _featureFrozen = false;
     bool _moduleLoaded = false;
 
+    IFeature(unsigned int InHandleId) { SetHandle(InHandleId); }
+
     void SetHandle(unsigned int InHandleId);
     bool SetInitParameters(NVSDK_NGX_Parameter* InParameters);
     void GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight);
@@ -119,8 +121,6 @@ class IFeature
     bool JitteredMV() { return _initFlags.JitteredMV; }
     bool LowResMV() { return _initFlags.LowResMV; }
     bool SharpenEnabled() { return _initFlags.SharpenEnabled; }
-
-    IFeature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) { SetHandle(InHandleId); }
 
     virtual ~IFeature() {}
 };

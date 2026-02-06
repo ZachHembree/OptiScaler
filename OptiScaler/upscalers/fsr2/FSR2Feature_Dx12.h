@@ -13,8 +13,8 @@ class FSR2FeatureDx12 : public FSR2Feature, public IFeature_Dx12
 
   public:
     FSR2FeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-        : FSR2Feature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters),
-          IFeature(InHandleId, InParameters)
+        : FSR2Feature(InHandleId, InParameters),
+          IFeature(InHandleId)
     {
     }
 

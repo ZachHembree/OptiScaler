@@ -335,6 +335,7 @@ void IFeature::GetDynamicOutputResolution(NVSDK_NGX_Parameter* InParameters, uns
     // FSR 3.1 uses upscaleSize for this, max size should stay the same
     int supportsUpscaleSize = 0;
     InParameters->Get("OptiScaler.SupportsUpscaleSize", &supportsUpscaleSize);
+
     if (supportsUpscaleSize)
     {
         InParameters->Set("OptiScaler.SupportsUpscaleSize", 0);

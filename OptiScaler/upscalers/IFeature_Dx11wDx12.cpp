@@ -896,8 +896,7 @@ bool IFeature_Dx11wDx12::BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* I
     return true;
 }
 
-IFeature_Dx11wDx12::IFeature_Dx11wDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters)
+IFeature_Dx11wDx12::IFeature_Dx11wDx12()
 {
 }
 

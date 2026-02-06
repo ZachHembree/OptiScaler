@@ -233,7 +233,7 @@ bool FSR2FeatureDx11::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 }
 
 FSR2FeatureDx11::FSR2FeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters), FSR2Feature(InHandleId, InParameters)
+    : IFeature(InHandleId), FSR2Feature(InHandleId, InParameters)
 {
 }
 

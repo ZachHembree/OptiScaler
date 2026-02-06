@@ -119,7 +119,7 @@ static inline FfxApiResourceDescription ffxApiGetImageResourceDescriptionVKLocal
 }
 
 FSR31FeatureVk::FSR31FeatureVk(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : FSR31Feature(InHandleId, InParameters), IFeature_Vk(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+    : FSR31Feature(InHandleId, InParameters), IFeature(InHandleId)
 {
     _moduleLoaded = FfxApiProxy::InitFfxVk();
 

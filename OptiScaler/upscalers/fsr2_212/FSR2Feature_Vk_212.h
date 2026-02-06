@@ -14,8 +14,8 @@ class FSR2FeatureVk212 : public FSR2Feature212, public IFeature_Vk
 
   public:
     FSR2FeatureVk212(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-        : FSR2Feature212(InHandleId, InParameters), IFeature_Vk(InHandleId, InParameters),
-          IFeature(InHandleId, InParameters)
+        : FSR2Feature212(InHandleId, InParameters),
+          IFeature(InHandleId)
     {
     }
 

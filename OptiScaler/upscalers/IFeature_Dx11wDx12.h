@@ -69,6 +69,8 @@ class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
     std::unique_ptr<Bias_Dx12> Bias = nullptr;
     std::unique_ptr<DepthTransfer_Dx11> DT = nullptr;
 
+    IFeature_Dx11wDx12();
+
     HRESULT CreateDx12Device(D3D_FEATURE_LEVEL InFeatureLevel);
     void GetHardwareAdapter(IDXGIFactory1* InFactory, IDXGIAdapter** InAdapter, D3D_FEATURE_LEVEL InFeatureLevel,
                             bool InRequestHighPerformanceAdapter);
@@ -89,8 +91,6 @@ class IFeature_Dx11wDx12 : public virtual IFeature_Dx11
     virtual bool Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Parameter* InParameters) = 0;
 
     bool BaseInit(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters);
-
-    IFeature_Dx11wDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);
 
     ~IFeature_Dx11wDx12();
 };

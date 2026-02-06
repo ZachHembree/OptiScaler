@@ -282,7 +282,7 @@ void DLSSFeatureDx12::Shutdown(ID3D12Device* InDevice)
 }
 
 DLSSFeatureDx12::DLSSFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters), DLSSFeature(InHandleId, InParameters)
+    : IFeature(InHandleId), DLSSFeature(InHandleId, InParameters)
 {
     if (NVNGXProxy::NVNGXModule() == nullptr)
     {

@@ -9,8 +9,7 @@
 #endif
 
 XeSSFeatureDx11on12::XeSSFeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature_Dx11wDx12(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters),
-      IFeature(InHandleId, InParameters), XeSSFeature(InHandleId, InParameters)
+    : IFeature(InHandleId), XeSSFeature(InHandleId, InParameters)
 {
     State::Instance().DisableChecks(77, "d3d12.dll");
     _moduleLoaded = XeSSProxy::InitXeSS() && XeSSProxy::D3D12CreateContext() != nullptr;

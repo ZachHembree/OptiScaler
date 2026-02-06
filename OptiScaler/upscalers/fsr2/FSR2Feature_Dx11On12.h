@@ -18,8 +18,8 @@ class FSR2FeatureDx11on12 : public FSR2Feature, public IFeature_Dx11wDx12
     feature_version Version() override { return FSR2Feature::Version(); }
 
     FSR2FeatureDx11on12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-        : FSR2Feature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters),
-          IFeature_Dx11wDx12(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+        : FSR2Feature(InHandleId, InParameters),
+          IFeature(InHandleId)
     {
     }
 

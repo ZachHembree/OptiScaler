@@ -271,7 +271,7 @@ bool DLSSDFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
 }
 
 DLSSDFeatureDx12::DLSSDFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters),
+    : IFeature(InHandleId),
       DLSSDFeature(InHandleId, InParameters)
 {
     if (NVNGXProxy::NVNGXModule() == nullptr)

@@ -95,7 +95,16 @@ class FSR31Feature : public virtual IFeature
     float _minDisOccAcc = -0.333f;
 
   public:
+    /**
+     * @brief Gets the current FSR version being used.
+     * @return The feature version structure (e.g., 3.1.0, 4.0.0).
+     */
     feature_version Version() override { return _version; }
+
+    /**
+     * @brief Gets the human-readable name of the feature.
+     * @return String name (e.g., "FSR").
+     */
     std::string Name() const override { return _name.c_str(); }
 
     FSR31Feature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters);

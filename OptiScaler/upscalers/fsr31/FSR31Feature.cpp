@@ -11,7 +11,7 @@ double FSR31Feature::GetDeltaTime()
 }
 
 FSR31Feature::FSR31Feature(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(InHandleId, InParameters)
+    : IFeature(InHandleId)
 {
     _initParameters = SetInitParameters(InParameters);
     _lastFrameTime = Util::MillisecondsNow();

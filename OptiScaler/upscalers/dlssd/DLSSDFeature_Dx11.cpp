@@ -295,7 +295,7 @@ bool DLSSDFeatureDx11::Evaluate(ID3D11DeviceContext* InDeviceContext, NVSDK_NGX_
 }
 
 DLSSDFeatureDx11::DLSSDFeatureDx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(InHandleId, InParameters), IFeature_Dx11(InHandleId, InParameters),
+    : IFeature(InHandleId),
       DLSSDFeature(InHandleId, InParameters)
 {
     if (NVNGXProxy::NVNGXModule() == nullptr)

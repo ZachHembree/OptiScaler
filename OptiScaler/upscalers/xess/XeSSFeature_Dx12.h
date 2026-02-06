@@ -12,7 +12,7 @@ class XeSSFeatureDx12 : public XeSSFeature, public IFeature_Dx12
     feature_version Version() override { return XeSSFeature::Version(); }
 
     XeSSFeatureDx12(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-        : IFeature(InHandleId, InParameters), IFeature_Dx12(InHandleId, InParameters),
+        : IFeature(InHandleId),
           XeSSFeature(InHandleId, InParameters)
     {
         if (XeSSProxy::Module() == nullptr && XeSSProxy::InitXeSS())

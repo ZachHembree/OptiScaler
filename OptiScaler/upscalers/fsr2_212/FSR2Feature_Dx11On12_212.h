@@ -17,8 +17,8 @@ class FSR2FeatureDx11on12_212 : public FSR2Feature212, public IFeature_Dx11wDx12
     std::string Name() const override { return "FSR w/Dx12"; }
 
     FSR2FeatureDx11on12_212(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters)
-        : FSR2Feature212(InHandleId, InParameters), IFeature_Dx11wDx12(InHandleId, InParameters),
-          IFeature_Dx11(InHandleId, InParameters), IFeature(InHandleId, InParameters)
+        : FSR2Feature212(InHandleId, InParameters),
+          IFeature(InHandleId)
     {
     }
 

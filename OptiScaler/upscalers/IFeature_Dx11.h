@@ -16,11 +16,11 @@ class IFeature_Dx11 : public virtual IFeature
     std::unique_ptr<RCAS_Dx11> RCAS = nullptr;
     std::unique_ptr<Bias_Dx11> Bias = nullptr;
 
+    IFeature_Dx11() {}
+
   public:
     virtual bool Init(ID3D11Device* InDevice, ID3D11DeviceContext* InContext, NVSDK_NGX_Parameter* InParameters) = 0;
     virtual bool Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Parameter* InParameters) = 0;
-
-    IFeature_Dx11(unsigned int InHandleId, NVSDK_NGX_Parameter* InParameters) : IFeature(InHandleId, InParameters) {}
 
     ~IFeature_Dx11();
 };

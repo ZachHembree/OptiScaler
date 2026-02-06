@@ -627,7 +627,7 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
 }
 
 XeSSFeature_Vk::XeSSFeature_Vk(unsigned int handleId, NVSDK_NGX_Parameter* InParameters)
-    : IFeature(handleId, InParameters), IFeature_Vk(handleId, InParameters)
+    : IFeature(handleId)
 {
     _initParameters = SetInitParameters(InParameters);
 
