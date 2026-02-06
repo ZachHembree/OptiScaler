@@ -1,7 +1,9 @@
 #include <pch.h>
 #include <Config.h>
-
 #include "FSR2Feature_Dx12_212.h"
+#include "MathUtils.h"
+
+using namespace OptiMath;
 
 bool FSR2FeatureDx12_212::Init(ID3D12Device* InDevice, ID3D12GraphicsCommandList* InCommandList,
                                NVSDK_NGX_Parameter* InParameters)
@@ -35,23 +37,27 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     if (!IsInited())
         return false;
 
+    auto& state = State::Instance();
+    auto& cfg = *Config::Instance();
+    const auto& ngxParams = *InParameters;
+
     if (!RCAS->IsInit())
-        Config::Instance()->RcasEnabled.set_volatile_value(false);
+        cfg.RcasEnabled.set_volatile_value(false);
 
     if (!OutputScaler->IsInit())
-        Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
+        cfg.OutputScalingEnabled.set_volatile_value(false);
 
     Fsr212::FfxFsr2DispatchDescription params {};
 
-    InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
-    InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
+    ngxParams.Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
+    ngxParams.Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
 
-    if (Config::Instance()->OverrideSharpness.value_or_default())
-        _sharpness = Config::Instance()->Sharpness.value_or_default();
+    if (cfg.OverrideSharpness.value_or_default())
+        _sharpness = cfg.Sharpness.value_or_default();
     else
         _sharpness = GetSharpness(InParameters);
 
-    if (Config::Instance()->RcasEnabled.value_or_default())
+    if (cfg.RcasEnabled.value_or_default())
     {
         params.enableSharpening = false;
         params.sharpness = 0.0f;
@@ -68,35 +74,35 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     LOG_DEBUG("Jitter Offset: {0}x{1}", params.jitterOffset.x, params.jitterOffset.y);
 
     unsigned int reset;
-    InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
+    ngxParams.Get(NVSDK_NGX_Parameter_Reset, &reset);
     params.reset = (reset == 1);
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
 
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or_default() && LowResMV();
+    bool useSS = cfg.OutputScalingEnabled.value_or_default() && LowResMV();
 
     LOG_DEBUG("Input Resolution: {0}x{1}", params.renderSize.width, params.renderSize.height);
 
     params.commandList = Fsr212::ffxGetCommandListDX12_212(InCommandList);
 
     ID3D12Resource* paramColor;
-    if (InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Color, (void**) &paramColor);
+    if (ngxParams.Get(NVSDK_NGX_Parameter_Color, &paramColor) != NVSDK_NGX_Result_Success)
+        ngxParams.Get(NVSDK_NGX_Parameter_Color, (void**) &paramColor);
 
     if (paramColor)
     {
         LOG_DEBUG("Color exist..");
 
-        if (Config::Instance()->ColorResourceBarrier.has_value())
+        if (cfg.ColorResourceBarrier.has_value())
         {
             ResourceBarrier(InCommandList, paramColor,
-                            (D3D12_RESOURCE_STATES) Config::Instance()->ColorResourceBarrier.value(),
+                            (D3D12_RESOURCE_STATES) cfg.ColorResourceBarrier.value(),
                             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
-        else if (State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL ||
-                 State::Instance().gameQuirks & GameQuirk::ForceUnrealEngine)
+        else if (state.NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL ||
+                 state.gameQuirks & GameQuirk::ForceUnrealEngine)
         {
-            Config::Instance()->ColorResourceBarrier.set_volatile_value(D3D12_RESOURCE_STATE_RENDER_TARGET);
+            cfg.ColorResourceBarrier.set_volatile_value(D3D12_RESOURCE_STATE_RENDER_TARGET);
             ResourceBarrier(InCommandList, paramColor, D3D12_RESOURCE_STATE_RENDER_TARGET,
                             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
@@ -111,21 +117,21 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     ID3D12Resource* paramVelocity;
-    if (InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, (void**) &paramVelocity);
+    if (ngxParams.Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity) != NVSDK_NGX_Result_Success)
+        ngxParams.Get(NVSDK_NGX_Parameter_MotionVectors, (void**) &paramVelocity);
 
     if (paramVelocity)
     {
         LOG_DEBUG("MotionVectors exist..");
 
-        if (Config::Instance()->MVResourceBarrier.has_value())
+        if (cfg.MVResourceBarrier.has_value())
             ResourceBarrier(InCommandList, paramVelocity,
-                            (D3D12_RESOURCE_STATES) Config::Instance()->MVResourceBarrier.value(),
+                            (D3D12_RESOURCE_STATES) cfg.MVResourceBarrier.value(),
                             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-        else if (State::Instance().NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL ||
-                 State::Instance().gameQuirks & GameQuirk::ForceUnrealEngine)
+        else if (state.NVNGX_Engine == NVSDK_NGX_ENGINE_TYPE_UNREAL ||
+                 state.gameQuirks & GameQuirk::ForceUnrealEngine)
         {
-            Config::Instance()->MVResourceBarrier.set_volatile_value(D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+            cfg.MVResourceBarrier.set_volatile_value(D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
             ResourceBarrier(InCommandList, paramVelocity, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
                             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
         }
@@ -140,16 +146,16 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     ID3D12Resource* paramOutput;
-    if (InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Output, (void**) &paramOutput);
+    if (ngxParams.Get(NVSDK_NGX_Parameter_Output, &paramOutput) != NVSDK_NGX_Result_Success)
+        ngxParams.Get(NVSDK_NGX_Parameter_Output, (void**) &paramOutput);
 
     if (paramOutput)
     {
         LOG_DEBUG("Output exist..");
 
-        if (Config::Instance()->OutputResourceBarrier.has_value())
+        if (cfg.OutputResourceBarrier.has_value())
             ResourceBarrier(InCommandList, paramOutput,
-                            (D3D12_RESOURCE_STATES) Config::Instance()->OutputResourceBarrier.value(),
+                            (D3D12_RESOURCE_STATES) cfg.OutputResourceBarrier.value(),
                             D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
         if (useSS)
@@ -170,9 +176,9 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             params.output = Fsr212::ffxGetResourceDX12_212(&_context, paramOutput, (wchar_t*) L"FSR2_Output",
                                                            Fsr212::FFX_RESOURCE_STATE_UNORDERED_ACCESS);
 
-        if (Config::Instance()->RcasEnabled.value_or_default() &&
-            (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() &&
-                                   Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+        if (cfg.RcasEnabled.value_or_default() &&
+            (_sharpness > 0.0f || (cfg.MotionSharpnessEnabled.value_or_default() &&
+                                   cfg.MotionSharpness.value_or_default() > 0.0f)) &&
             RCAS->IsInit() &&
             RCAS->CreateBufferResource(Device, (ID3D12Resource*) params.output.resource,
                                        D3D12_RESOURCE_STATE_UNORDERED_ACCESS))
@@ -189,16 +195,16 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     ID3D12Resource* paramDepth;
-    if (InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_Depth, (void**) &paramDepth);
+    if (ngxParams.Get(NVSDK_NGX_Parameter_Depth, &paramDepth) != NVSDK_NGX_Result_Success)
+        ngxParams.Get(NVSDK_NGX_Parameter_Depth, (void**) &paramDepth);
 
     if (paramDepth)
     {
         LOG_DEBUG("Depth exist..");
 
-        if (Config::Instance()->DepthResourceBarrier.has_value())
+        if (cfg.DepthResourceBarrier.has_value())
             ResourceBarrier(InCommandList, paramDepth,
-                            (D3D12_RESOURCE_STATES) Config::Instance()->DepthResourceBarrier.value(),
+                            (D3D12_RESOURCE_STATES) cfg.DepthResourceBarrier.value(),
                             D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
         params.depth = Fsr212::ffxGetResourceDX12_212(&_context, paramDepth, (wchar_t*) L"FSR2_Depth",
@@ -217,16 +223,16 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
     else
     {
-        if (InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp) != NVSDK_NGX_Result_Success)
-            InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, (void**) &paramExp);
+        if (ngxParams.Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp) != NVSDK_NGX_Result_Success)
+            ngxParams.Get(NVSDK_NGX_Parameter_ExposureTexture, (void**) &paramExp);
 
         if (paramExp)
         {
             LOG_DEBUG("ExposureTexture exist..");
 
-            if (Config::Instance()->ExposureResourceBarrier.has_value())
+            if (cfg.ExposureResourceBarrier.has_value())
                 ResourceBarrier(InCommandList, paramExp,
-                                (D3D12_RESOURCE_STATES) Config::Instance()->ExposureResourceBarrier.value(),
+                                (D3D12_RESOURCE_STATES) cfg.ExposureResourceBarrier.value(),
                                 D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
             params.exposure = Fsr212::ffxGetResourceDX12_212(&_context, paramExp, (wchar_t*) L"FSR2_Exposure",
@@ -235,26 +241,26 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
         else
         {
             LOG_DEBUG("AutoExposure disabled but ExposureTexture is not exist, it may cause problems!!");
-            State::Instance().AutoExposure = true;
-            State::Instance().changeBackend[Handle()->Id] = true;
+            state.AutoExposure = true;
+            state.changeBackend[Handle()->Id] = true;
             return true;
         }
     }
 
     ID3D12Resource* paramTransparency = nullptr;
-    if (InParameters->Get(OptiKeys::FSR_TransparencyAndComp, &paramTransparency) == NVSDK_NGX_Result_Success)
-        InParameters->Get(OptiKeys::FSR_TransparencyAndComp, (void**) &paramTransparency);
+    if (ngxParams.Get(OptiKeys::FSR_TransparencyAndComp, &paramTransparency) == NVSDK_NGX_Result_Success)
+        ngxParams.Get(OptiKeys::FSR_TransparencyAndComp, (void**) &paramTransparency);
 
     ID3D12Resource* paramReactiveMask = nullptr;
-    if (InParameters->Get(OptiKeys::FSR_Reactive, &paramReactiveMask) == NVSDK_NGX_Result_Success)
-        InParameters->Get(OptiKeys::FSR_Reactive, (void**) &paramReactiveMask);
+    if (ngxParams.Get(OptiKeys::FSR_Reactive, &paramReactiveMask) == NVSDK_NGX_Result_Success)
+        ngxParams.Get(OptiKeys::FSR_Reactive, (void**) &paramReactiveMask);
 
     ID3D12Resource* paramReactiveMask2 = nullptr;
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2) !=
+    if (ngxParams.Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2) !=
         NVSDK_NGX_Result_Success)
-        InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**) &paramReactiveMask2);
+        ngxParams.Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, (void**) &paramReactiveMask2);
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr &&
+    if (!cfg.DisableReactiveMask.value_or(paramReactiveMask == nullptr &&
                                                           paramReactiveMask2 == nullptr))
     {
         if (paramTransparency != nullptr)
@@ -275,26 +281,26 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             if (paramReactiveMask2 != nullptr)
             {
                 LOG_DEBUG("Bias mask exist..");
-                Config::Instance()->DisableReactiveMask.set_volatile_value(false);
+                cfg.DisableReactiveMask.set_volatile_value(false);
 
-                if (Config::Instance()->MaskResourceBarrier.has_value())
+                if (cfg.MaskResourceBarrier.has_value())
                     ResourceBarrier(InCommandList, paramReactiveMask2,
-                                    (D3D12_RESOURCE_STATES) Config::Instance()->MaskResourceBarrier.value(),
+                                    (D3D12_RESOURCE_STATES) cfg.MaskResourceBarrier.value(),
                                     D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
 
-                if (paramTransparency == nullptr && Config::Instance()->FsrUseMaskForTransparency.value_or_default())
+                if (paramTransparency == nullptr && cfg.FsrUseMaskForTransparency.value_or_default())
                     params.transparencyAndComposition =
                         Fsr212::ffxGetResourceDX12_212(&_context, paramReactiveMask2, (wchar_t*) L"FSR2_Transparency",
                                                        Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
 
-                if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f && Bias->IsInit() &&
+                if (cfg.DlssReactiveMaskBias.value_or_default() > 0.0f && Bias->IsInit() &&
                     Bias->CreateBufferResource(Device, paramReactiveMask2, D3D12_RESOURCE_STATE_UNORDERED_ACCESS) &&
                     Bias->CanRender())
                 {
                     Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
                     if (Bias->Dispatch(Device, InCommandList, paramReactiveMask2,
-                                       Config::Instance()->DlssReactiveMaskBias.value_or_default(), Bias->Buffer()))
+                                       cfg.DlssReactiveMaskBias.value_or_default(), Bias->Buffer()))
                     {
                         Bias->SetBufferState(InCommandList, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
                         params.reactive =
@@ -305,7 +311,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
                 else
                 {
                     LOG_DEBUG("Skipping reactive mask, Bias: {0}, Bias Init: {1}, Bias CanRender: {2}",
-                              Config::Instance()->DlssReactiveMaskBias.value_or_default(), Bias->IsInit(),
+                              cfg.DlssReactiveMaskBias.value_or_default(), Bias->IsInit(),
                               Bias->CanRender());
                 }
             }
@@ -323,8 +329,8 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     float MVScaleX = 1.0f;
     float MVScaleY = 1.0f;
 
-    if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
+    if (ngxParams.Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
+        ngxParams.Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
     {
         params.motionVectorScale.x = MVScaleX;
         params.motionVectorScale.y = MVScaleY;
@@ -339,40 +345,41 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
 
     LOG_DEBUG("Sharpness: {0}", params.sharpness);
 
-    if (Config::Instance()->FsrCameraNear.has_value() || !Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get(OptiKeys::FSR_NearPlane, &params.cameraNear) != NVSDK_NGX_Result_Success)
+    if (cfg.FsrCameraNear.has_value() || !cfg.FsrUseFsrInputValues.value_or_default() ||
+        ngxParams.Get(OptiKeys::FSR_NearPlane, &params.cameraNear) != NVSDK_NGX_Result_Success)
     {
         if (DepthInverted())
-            params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
+            params.cameraFar = cfg.FsrCameraNear.value_or_default();
         else
-            params.cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
+            params.cameraNear = cfg.FsrCameraNear.value_or_default();
     }
 
-    if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get(OptiKeys::FSR_FarPlane, &params.cameraFar) != NVSDK_NGX_Result_Success)
+    if (!cfg.FsrUseFsrInputValues.value_or_default() ||
+        ngxParams.Get(OptiKeys::FSR_FarPlane, &params.cameraFar) != NVSDK_NGX_Result_Success)
     {
         if (DepthInverted())
-            params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
+            params.cameraNear = cfg.FsrCameraFar.value_or_default();
         else
-            params.cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
+            params.cameraFar = cfg.FsrCameraFar.value_or_default();
     }
 
-    if (InParameters->Get(OptiKeys::FSR_CameraFovVertical, &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
+    if (ngxParams.Get(OptiKeys::FSR_CameraFovVertical, &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
     {
-        if (Config::Instance()->FsrVerticalFov.has_value())
-            params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
-        else if (Config::Instance()->FsrHorizontalFov.value_or_default() > 0.0f)
-            params.cameraFovAngleVertical =
-                2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) /
-                            (float) TargetHeight() * (float) TargetWidth());
+        if (cfg.FsrVerticalFov.has_value())
+            params.cameraFovAngleVertical = GetRadiansFromDeg(cfg.FsrVerticalFov.value());
+        else if (cfg.FsrHorizontalFov.value_or_default() > 0.0f)
+        {
+            const float hFovRad = GetRadiansFromDeg(cfg.FsrHorizontalFov.value());
+            params.cameraFovAngleVertical = GetVerticalFovFromHorizontal(hFovRad, (float) TargetWidth(), (float) TargetHeight());
+        }
         else
-            params.cameraFovAngleVertical = 1.0471975511966f;
+            params.cameraFovAngleVertical = GetRadiansFromDeg(60);
     }
 
-    if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get(OptiKeys::FSR_FrameTimeDelta, &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+    if (!cfg.FsrUseFsrInputValues.value_or_default() ||
+        ngxParams.Get(OptiKeys::FSR_FrameTimeDelta, &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
     {
-        if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) !=
+        if (ngxParams.Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) !=
                 NVSDK_NGX_Result_Success ||
             params.frameTimeDelta < 1.0f)
             params.frameTimeDelta = (float) GetDeltaTime();
@@ -380,7 +387,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
 
     LOG_DEBUG("FrameTimeDeltaInMsec: {0}", params.frameTimeDelta);
 
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
+    if (ngxParams.Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
         params.preExposure = 1.0f;
 
     LOG_DEBUG("Dispatch!!");
@@ -393,9 +400,9 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     // apply rcas
-    if (Config::Instance()->RcasEnabled.value_or_default() &&
-        (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or_default() &&
-                               Config::Instance()->MotionSharpness.value_or_default() > 0.0f)) &&
+    if (cfg.RcasEnabled.value_or_default() &&
+        (_sharpness > 0.0f || (cfg.MotionSharpnessEnabled.value_or_default() &&
+                               cfg.MotionSharpness.value_or_default() > 0.0f)) &&
         RCAS->CanRender())
     {
         if (params.output.resource != RCAS->Buffer())
@@ -409,8 +416,8 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
         rcasConstants.Sharpness = _sharpness;
         rcasConstants.DisplayWidth = TargetWidth();
         rcasConstants.DisplayHeight = TargetHeight();
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+        ngxParams.Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+        ngxParams.Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
         rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
         rcasConstants.RenderHeight = RenderHeight();
         rcasConstants.RenderWidth = RenderWidth();
@@ -420,7 +427,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             if (!RCAS->Dispatch(Device, InCommandList, (ID3D12Resource*) params.output.resource,
                                 (ID3D12Resource*) params.motionVectors.resource, rcasConstants, OutputScaler->Buffer()))
             {
-                Config::Instance()->RcasEnabled.set_volatile_value(false);
+                cfg.RcasEnabled.set_volatile_value(false);
                 return true;
             }
         }
@@ -429,7 +436,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             if (!RCAS->Dispatch(Device, InCommandList, (ID3D12Resource*) params.output.resource,
                                 (ID3D12Resource*) params.motionVectors.resource, rcasConstants, paramOutput))
             {
-                Config::Instance()->RcasEnabled.set_volatile_value(false);
+                cfg.RcasEnabled.set_volatile_value(false);
                 return true;
             }
         }
@@ -442,14 +449,14 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
 
         if (!OutputScaler->Dispatch(Device, InCommandList, OutputScaler->Buffer(), paramOutput))
         {
-            Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
+            cfg.OutputScalingEnabled.set_volatile_value(false);
             State::Instance().changeBackend[Handle()->Id] = true;
             return true;
         }
     }
 
     // imgui
-    if (!Config::Instance()->OverlayMenu.value_or_default() && _frameCount > 30)
+    if (!cfg.OverlayMenu.value_or_default() && _frameCount > 30)
     {
         if (Imgui != nullptr && Imgui.get() != nullptr)
         {
@@ -468,29 +475,29 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     // restore resource states
-    if (paramColor && Config::Instance()->ColorResourceBarrier.has_value())
+    if (paramColor && cfg.ColorResourceBarrier.has_value())
         ResourceBarrier(InCommandList, paramColor, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES) Config::Instance()->ColorResourceBarrier.value());
+                        (D3D12_RESOURCE_STATES) cfg.ColorResourceBarrier.value());
 
-    if (paramVelocity && Config::Instance()->MVResourceBarrier.has_value())
+    if (paramVelocity && cfg.MVResourceBarrier.has_value())
         ResourceBarrier(InCommandList, paramVelocity, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES) Config::Instance()->MVResourceBarrier.value());
+                        (D3D12_RESOURCE_STATES) cfg.MVResourceBarrier.value());
 
-    if (paramOutput && Config::Instance()->OutputResourceBarrier.has_value())
+    if (paramOutput && cfg.OutputResourceBarrier.has_value())
         ResourceBarrier(InCommandList, paramOutput, D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
-                        (D3D12_RESOURCE_STATES) Config::Instance()->OutputResourceBarrier.value());
+                        (D3D12_RESOURCE_STATES) cfg.OutputResourceBarrier.value());
 
-    if (paramDepth && Config::Instance()->DepthResourceBarrier.has_value())
+    if (paramDepth && cfg.DepthResourceBarrier.has_value())
         ResourceBarrier(InCommandList, paramDepth, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES) Config::Instance()->DepthResourceBarrier.value());
+                        (D3D12_RESOURCE_STATES) cfg.DepthResourceBarrier.value());
 
-    if (paramExp && Config::Instance()->ExposureResourceBarrier.has_value())
+    if (paramExp && cfg.ExposureResourceBarrier.has_value())
         ResourceBarrier(InCommandList, paramExp, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES) Config::Instance()->ExposureResourceBarrier.value());
+                        (D3D12_RESOURCE_STATES) cfg.ExposureResourceBarrier.value());
 
-    if (paramReactiveMask && Config::Instance()->MaskResourceBarrier.has_value())
+    if (paramReactiveMask && cfg.MaskResourceBarrier.has_value())
         ResourceBarrier(InCommandList, paramReactiveMask, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
-                        (D3D12_RESOURCE_STATES) Config::Instance()->MaskResourceBarrier.value());
+                        (D3D12_RESOURCE_STATES) cfg.MaskResourceBarrier.value());
 
     _frameCount++;
 

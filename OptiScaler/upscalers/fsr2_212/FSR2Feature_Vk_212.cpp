@@ -1,9 +1,10 @@
 #include <pch.h>
 #include <Config.h>
-
 #include "FSR2Feature_Vk_212.h"
-
 #include "nvsdk_ngx_vk.h"
+#include "MathUtils.h"
+
+using namespace OptiMath;
 
 bool FSR2FeatureVk212::InitFSR2(const NVSDK_NGX_Parameter* InParameters)
 {
@@ -185,19 +186,22 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     if (!IsInited())
         return false;
 
+    auto& cfg = *Config::Instance();
+    const auto& ngxParams = *InParameters;
+
     if (!RCAS->IsInit())
-        Config::Instance()->RcasEnabled.set_volatile_value(false);
+        cfg.RcasEnabled.set_volatile_value(false);
 
     if (!OS->IsInit())
-        Config::Instance()->OutputScalingEnabled.set_volatile_value(false);
+        cfg.OutputScalingEnabled.set_volatile_value(false);
 
     Fsr212::FfxFsr2DispatchDescription params {};
 
-    InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
-    InParameters->Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
+    ngxParams.Get(NVSDK_NGX_Parameter_Jitter_Offset_X, &params.jitterOffset.x);
+    ngxParams.Get(NVSDK_NGX_Parameter_Jitter_Offset_Y, &params.jitterOffset.y);
 
     unsigned int reset;
-    InParameters->Get(NVSDK_NGX_Parameter_Reset, &reset);
+    ngxParams.Get(NVSDK_NGX_Parameter_Reset, &reset);
     params.reset = (reset == 1);
 
     GetRenderResolution(InParameters, &params.renderSize.width, &params.renderSize.height);
@@ -207,7 +211,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     params.commandList = Fsr212::ffxGetCommandListVK212(InCmdBuffer);
 
     void* paramColor;
-    InParameters->Get(NVSDK_NGX_Parameter_Color, &paramColor);
+    ngxParams.Get(NVSDK_NGX_Parameter_Color, &paramColor);
 
     if (paramColor)
     {
@@ -228,7 +232,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     }
 
     void* paramVelocity;
-    InParameters->Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity);
+    ngxParams.Get(NVSDK_NGX_Parameter_MotionVectors, &paramVelocity);
 
     if (paramVelocity)
     {
@@ -249,7 +253,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     }
 
     void* paramOutput;
-    InParameters->Get(NVSDK_NGX_Parameter_Output, &paramOutput);
+    ngxParams.Get(NVSDK_NGX_Parameter_Output, &paramOutput);
 
     if (paramOutput)
     {
@@ -270,7 +274,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     }
 
     void* paramDepth;
-    InParameters->Get(NVSDK_NGX_Parameter_Depth, &paramDepth);
+    ngxParams.Get(NVSDK_NGX_Parameter_Depth, &paramDepth);
 
     if (paramDepth)
     {
@@ -297,7 +301,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     }
     else
     {
-        InParameters->Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp);
+        ngxParams.Get(NVSDK_NGX_Parameter_ExposureTexture, &paramExp);
 
         if (paramExp)
         {
@@ -321,15 +325,15 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     }
 
     void* paramTransparency = nullptr;
-    InParameters->Get(OptiKeys::FSR_TransparencyAndComp, &paramTransparency);
+    ngxParams.Get(OptiKeys::FSR_TransparencyAndComp, &paramTransparency);
 
     void* paramReactiveMask = nullptr;
-    InParameters->Get(OptiKeys::FSR_Reactive, &paramReactiveMask);
+    ngxParams.Get(OptiKeys::FSR_Reactive, &paramReactiveMask);
 
     void* paramReactiveMask2 = nullptr;
-    InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2);
+    ngxParams.Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2);
 
-    if (!Config::Instance()->DisableReactiveMask.value_or(paramReactiveMask == nullptr &&
+    if (!cfg.DisableReactiveMask.value_or(paramReactiveMask == nullptr &&
                                                           paramReactiveMask2 == nullptr))
     {
         if (paramTransparency != nullptr)
@@ -360,7 +364,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
             if (paramReactiveMask2 != nullptr)
             {
                 LOG_DEBUG("Bias mask exist..");
-                if (Config::Instance()->FsrUseMaskForTransparency.value_or_default())
+                if (cfg.FsrUseMaskForTransparency.value_or_default())
                 {
                     params.transparencyAndComposition = Fsr212::ffxGetTextureResourceVK212(
                         &_context, ((NVSDK_NGX_Resource_VK*) paramReactiveMask2)->Resource.ImageViewInfo.Image,
@@ -371,7 +375,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
                         (wchar_t*) L"FSR2_Transparency", Fsr212::FFX_RESOURCE_STATE_COMPUTE_READ);
                 }
 
-                if (Config::Instance()->DlssReactiveMaskBias.value_or_default() > 0.0f)
+                if (cfg.DlssReactiveMaskBias.value_or_default() > 0.0f)
                 {
                     params.reactive = Fsr212::ffxGetTextureResourceVK212(
                         &_context, ((NVSDK_NGX_Resource_VK*) paramReactiveMask2)->Resource.ImageViewInfo.Image,
@@ -385,7 +389,7 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
             else
             {
                 LOG_DEBUG("Bias mask not exist and its enabled in config, it may cause problems!!");
-                Config::Instance()->DisableReactiveMask.set_volatile_value(true);
+                cfg.DisableReactiveMask.set_volatile_value(true);
                 return true;
             }
         }
@@ -395,12 +399,12 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     VkImage finalOutputImage = ((NVSDK_NGX_Resource_VK*) paramOutput)->Resource.ImageViewInfo.Image;
 
     _sharpness = GetSharpness(InParameters);
-    float ssMulti = Config::Instance()->OutputScalingMultiplier.value_or(1.5f);
-    bool useSS = Config::Instance()->OutputScalingEnabled.value_or(false) && LowResMV();
+    float ssMulti = cfg.OutputScalingMultiplier.value_or(1.5f);
+    bool useSS = cfg.OutputScalingEnabled.value_or(false) && LowResMV();
 
-    bool rcasEnabled = Config::Instance()->RcasEnabled.value_or(true) &&
-                       (_sharpness > 0.0f || (Config::Instance()->MotionSharpnessEnabled.value_or(false) &&
-                                              Config::Instance()->MotionSharpness.value_or(0.4) > 0.0f)) &&
+    bool rcasEnabled = cfg.RcasEnabled.value_or(true) &&
+                       (_sharpness > 0.0f || (cfg.MotionSharpnessEnabled.value_or(false) &&
+                                              cfg.MotionSharpness.value_or(0.4) > 0.0f)) &&
                        RCAS->CanRender();
 
     if (rcasEnabled)
@@ -485,8 +489,8 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     float MVScaleX = 1.0f;
     float MVScaleY = 1.0f;
 
-    if (InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
+    if (ngxParams.Get(NVSDK_NGX_Parameter_MV_Scale_X, &MVScaleX) == NVSDK_NGX_Result_Success &&
+        ngxParams.Get(NVSDK_NGX_Parameter_MV_Scale_Y, &MVScaleY) == NVSDK_NGX_Result_Success)
     {
         params.motionVectorScale.x = MVScaleX;
         params.motionVectorScale.y = MVScaleY;
@@ -506,15 +510,15 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
     }
     else
     {
-        if (Config::Instance()->OverrideSharpness.value_or_default())
+        if (cfg.OverrideSharpness.value_or_default())
         {
-            params.enableSharpening = Config::Instance()->Sharpness.value_or_default() > 0.0f;
-            params.sharpness = Config::Instance()->Sharpness.value_or_default();
+            params.enableSharpening = cfg.Sharpness.value_or_default() > 0.0f;
+            params.sharpness = cfg.Sharpness.value_or_default();
         }
         else
         {
             float shapness = 0.0f;
-            if (InParameters->Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
+            if (ngxParams.Get(NVSDK_NGX_Parameter_Sharpness, &shapness) == NVSDK_NGX_Result_Success)
             {
                 _sharpness = shapness;
 
@@ -533,30 +537,31 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
 
     if (DepthInverted())
     {
-        params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
-        params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
+        params.cameraFar = cfg.FsrCameraNear.value_or_default();
+        params.cameraNear = cfg.FsrCameraFar.value_or_default();
     }
     else
     {
-        params.cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
-        params.cameraNear = Config::Instance()->FsrCameraNear.value_or_default();
+        params.cameraFar = cfg.FsrCameraFar.value_or_default();
+        params.cameraNear = cfg.FsrCameraNear.value_or_default();
     }
 
-    if (Config::Instance()->FsrVerticalFov.has_value())
-        params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
-    else if (Config::Instance()->FsrHorizontalFov.value_or_default() > 0.0f)
-        params.cameraFovAngleVertical =
-            2.0f * atan((tan(Config::Instance()->FsrHorizontalFov.value() * 0.0174532925199433f) * 0.5f) /
-                        (float) DisplayHeight() * (float) DisplayWidth());
+    if (cfg.FsrVerticalFov.has_value())
+        params.cameraFovAngleVertical = GetRadiansFromDeg(cfg.FsrVerticalFov.value());
+    else if (cfg.FsrHorizontalFov.value_or_default() > 0.0f)
+    {
+        const float hFovRad = GetRadiansFromDeg(cfg.FsrHorizontalFov.value());
+        params.cameraFovAngleVertical = GetVerticalFovFromHorizontal(hFovRad, (float)TargetWidth(), (float)TargetHeight());
+    }
     else
-        params.cameraFovAngleVertical = 1.0471975511966f;
+        params.cameraFovAngleVertical = GetRadiansFromDeg(60);
 
-    if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) !=
+    if (ngxParams.Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) !=
             NVSDK_NGX_Result_Success ||
         params.frameTimeDelta < 1.0f)
         params.frameTimeDelta = (float) GetDeltaTime();
 
-    if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
+    if (ngxParams.Get(NVSDK_NGX_Parameter_DLSS_Pre_Exposure, &params.preExposure) != NVSDK_NGX_Result_Success)
         params.preExposure = 1.0f;
 
     LOG_DEBUG("Dispatch!!");
@@ -604,8 +609,8 @@ bool FSR2FeatureVk212::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter
         rcasConstants.Sharpness = _sharpness;
         rcasConstants.DisplayWidth = TargetWidth();
         rcasConstants.DisplayHeight = TargetHeight();
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
-        InParameters->Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
+        ngxParams.Get(NVSDK_NGX_Parameter_MV_Scale_X, &rcasConstants.MvScaleX);
+        ngxParams.Get(NVSDK_NGX_Parameter_MV_Scale_Y, &rcasConstants.MvScaleY);
         rcasConstants.DisplaySizeMV = !(GetFeatureFlags() & NVSDK_NGX_DLSS_Feature_Flags_MVLowRes);
         rcasConstants.RenderHeight = RenderHeight();
         rcasConstants.RenderWidth = RenderWidth();

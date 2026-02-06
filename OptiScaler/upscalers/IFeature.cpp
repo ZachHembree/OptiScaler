@@ -169,7 +169,7 @@ bool IFeature::SetInitParameters(NVSDK_NGX_Parameter* InParameters)
     return false;
 }
 
-void IFeature::GetRenderResolution(NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight)
+void IFeature::GetRenderResolution(const NVSDK_NGX_Parameter* InParameters, unsigned int* OutWidth, unsigned int* OutHeight)
 {
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Render_Subrect_Dimensions_Width, OutWidth) !=
             NVSDK_NGX_Result_Success ||

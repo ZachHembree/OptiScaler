@@ -665,6 +665,15 @@
     <ClInclude Include="upscalers\IFeature_Dx11wDx12.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="shaders\hud_copy\HudCopy_Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\hud_copy\HudCopy_Dx12.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MathUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Config.cpp">

@@ -1,6 +1,4 @@
 #pragma once
-
-
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 // #define WIN32_NO_STATUS
@@ -194,6 +192,8 @@ namespace OptiKeys
     // ID code used for the DX12 input provider
     inline constexpr CString Dx12Provider = "OptiDx12";
 
+    // Upscalers
+
     // ID code used for the XeSS upscaler backend
     inline constexpr CString XeSS = "xess";
     // ID code used for the XeSS upscaler backend used with the DirectX 11 on 12 compatibility layer
@@ -215,15 +215,27 @@ namespace OptiKeys
     // ID code used for the DLSS-D/Ray Reconstruction upscaler+denoiser backend
     inline constexpr CString DLSSD = "dlssd";
 
-    inline constexpr CString FSR_UpscaleWidth = "FSR.upscaleSize.width";
-    inline constexpr CString FSR_UpscaleHeight = "FSR.upscaleSize.height";
+    // FSR resource keys
 
+    // Key for the horizontal resolution that FSR will output
+    inline constexpr CString FSR_UpscaleWidth = "FSR.upscaleSize.width"; 
+    // Key for the vertical resolution that FSR will output
+    inline constexpr CString FSR_UpscaleHeight = "FSR.upscaleSize.height";
+    // Key for the distance to the near plane of the camera for FSR.
     inline constexpr CString FSR_NearPlane = "FSR.cameraNear";
+    // Key for the distance to the far plane of the camera for FSR.
     inline constexpr CString FSR_FarPlane = "FSR.cameraFar";
+    // Key for the camera field of view in the vertical direction used by FSR for reprojection
     inline constexpr CString FSR_CameraFovVertical = "FSR.cameraFovAngleVertical";
+    // Key for the time elapsed since the last frame (expressed in milliseconds)
     inline constexpr CString FSR_FrameTimeDelta = "FSR.frameTimeDelta";
+    // Key for the scale factor to convert view space units to meters
     inline constexpr CString FSR_ViewSpaceToMetersFactor = "FSR.viewSpaceToMetersFactor";
+    // Key for the mask used to exclude semitransparencies and UI elements. Used in older FSR versions.
+    // Optional in FSR 4.0+.
     inline constexpr CString FSR_TransparencyAndComp = "FSR.transparencyAndComposition";
+    // Key for the motion vector attenuation mask. Used in older FSR and XeSS versions to reduce 
+    // ghosting with semitransparencies and particles. Optional in FSR 4.0+.
     inline constexpr CString FSR_Reactive = "FSR.reactive";
 
 } // namespace OptiKeys
