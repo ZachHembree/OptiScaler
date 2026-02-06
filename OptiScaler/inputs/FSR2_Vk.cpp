@@ -354,7 +354,7 @@ static FfxErrorCode ffxFsr2ContextCreate_Vk(FfxFsr2Context* context, FfxFsr2Cont
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext(
-            OptiKeys::ProjectID.data(), state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(),
+            OptiKeys::ProjectID, state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(),
             State::Instance().VulkanInstance, _vkPhysicalDevice, _vkDevice, vkGetInstanceProcAddr, vkGetDeviceProcAddr,
             state.NVNGX_Version == 0 ? NVSDK_NGX_Version_API : state.NVNGX_Version, &fcInfo);
 
@@ -507,21 +507,21 @@ static FfxErrorCode ffxFsr2ContextDispatch_Vk(FfxFsr2Context* context,
     if (dispatchDescription->transparencyAndComposition.resource != nullptr &&
         CreateIVandNVRes(dispatchDescription->transparencyAndComposition, &fsrTransparencyView, &fsrTransparencyNVRes))
     {
-        params->Set("FSR.transparencyAndComposition", &fsrTransparencyNVRes);
+        params->Set(OptiKeys::FSR_TransparencyAndComp, &fsrTransparencyNVRes);
     }
 
     if (dispatchDescription->reactive.resource != nullptr &&
         CreateIVandNVRes(dispatchDescription->reactive, &fsrReactiveView, &fsrReactiveNVRes))
     {
-        params->Set("FSR.reactive", &fsrReactiveNVRes);
+        params->Set(OptiKeys::FSR_Reactive, &fsrReactiveNVRes);
     }
 
-    params->Set("FSR.cameraNear", dispatchDescription->cameraNear);
-    params->Set("FSR.cameraFar", dispatchDescription->cameraFar);
-    params->Set("FSR.cameraFovAngleVertical", dispatchDescription->cameraFovAngleVertical);
-    params->Set("FSR.frameTimeDelta", dispatchDescription->frameTimeDelta);
-    params->Set("FSR.transparencyAndComposition", dispatchDescription->transparencyAndComposition.resource);
-    params->Set("FSR.reactive", dispatchDescription->reactive.resource);
+    params->Set(OptiKeys::FSR_NearPlane, dispatchDescription->cameraNear);
+    params->Set(OptiKeys::FSR_FarPlane, dispatchDescription->cameraFar);
+    params->Set(OptiKeys::FSR_CameraFovVertical, dispatchDescription->cameraFovAngleVertical);
+    params->Set(OptiKeys::FSR_FrameTimeDelta, dispatchDescription->frameTimeDelta);
+    params->Set(OptiKeys::FSR_TransparencyAndComp, dispatchDescription->transparencyAndComposition.resource);
+    params->Set(OptiKeys::FSR_Reactive, dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDescription->sharpness);
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width,

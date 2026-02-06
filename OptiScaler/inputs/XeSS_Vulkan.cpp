@@ -164,7 +164,7 @@ xess_result_t hk_xessVKCreateContext(VkInstance instance, VkPhysicalDevice physi
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext(
-            OptiKeys::ProjectID.data(), NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, exePath.c_str(), _instance,
+            OptiKeys::ProjectID, NVSDK_NGX_ENGINE_TYPE_CUSTOM, VER_PRODUCT_VERSION_STR, exePath.c_str(), _instance,
             _physicalDevice, _device, vkGetInstanceProcAddr, vkGetDeviceProcAddr, State::Instance().NVNGX_Version,
             &fcInfo);
 
@@ -308,7 +308,7 @@ xess_result_t hk_xessVKExecute(xess_context_handle_t hContext, VkCommandBuffer c
             feature_version { 2, 0, 1 })
             params->Set(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &biasNVRes[index]);
         else
-            params->Set("FSR.reactive", &biasNVRes[index]);
+            params->Set(OptiKeys::FSR_Reactive, &biasNVRes[index]);
     }
 
     if (pExecParams->colorTexture.image == nullptr)

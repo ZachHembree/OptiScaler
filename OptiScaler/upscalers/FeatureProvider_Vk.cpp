@@ -215,7 +215,7 @@ bool FeatureProvider_Vk::ChangeFeature(std::string_view upscalerName, VkInstance
         // If this is an OptiScaler fake NVNGX param table, delete it
         int optiParam = 0;
 
-        if (contextData->createParams->Get(OptiKeys::ProjectID.data(), &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
+        if (contextData->createParams->Get(OptiKeys::ProjectID, &optiParam) == NVSDK_NGX_Result_Success && optiParam == 1)
         {
             TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::VULKAN_DestroyParameters());
             contextData->createParams = nullptr;

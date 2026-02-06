@@ -188,8 +188,8 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     params->Set(NVSDK_NGX_Parameter_Height, pExecParams->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->maxUpscaleSize.width);
     params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->maxUpscaleSize.height);
-    params->Set("FSR.upscaleSize.width", pExecParams->upscaleSize.width);
-    params->Set("FSR.upscaleSize.height", pExecParams->upscaleSize.height);
+    params->Set(OptiKeys::FSR_UpscaleWidth, pExecParams->upscaleSize.width);
+    params->Set(OptiKeys::FSR_UpscaleHeight, pExecParams->upscaleSize.height);
 
     auto width = pExecParams->upscaleSize.width > 0 ? pExecParams->upscaleSize.width : initParams->maxUpscaleSize.width;
 
@@ -363,7 +363,7 @@ ffxReturnCode_t ffxCreateContext_Vk(ffxContext* context, ffxCreateContextDescHea
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_VULKAN_Init_ProjectID_Ext(
-            OptiKeys::ProjectID.data(), State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(),
+            OptiKeys::ProjectID, State::Instance().NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(),
             State::Instance().VulkanInstance, _vkPhysicalDevice, _vkDevice, vkGetInstanceProcAddr, _vkDeviceProcAddress,
             State::Instance().NVNGX_Version, &fcInfo);
 
@@ -614,20 +614,20 @@ ffxReturnCode_t ffxDispatch_Vk(ffxContext* context, ffxDispatchDescHeader* desc)
     if (dispatchDesc->transparencyAndComposition.resource != nullptr &&
         CreateIVandNVRes(dispatchDesc->transparencyAndComposition, &fsrTransparencyView, &fsrTransparencyNVRes))
     {
-        params->Set("FSR.transparencyAndComposition", &fsrTransparencyNVRes);
+        params->Set(OptiKeys::FSR_TransparencyAndComp, &fsrTransparencyNVRes);
     }
 
     if (dispatchDesc->reactive.resource != nullptr &&
         CreateIVandNVRes(dispatchDesc->reactive, &fsrReactiveView, &fsrReactiveNVRes))
     {
-        params->Set("FSR.reactive", &fsrReactiveNVRes);
+        params->Set(OptiKeys::FSR_Reactive, &fsrReactiveNVRes);
     }
 
-    params->Set("FSR.cameraNear", dispatchDesc->cameraNear);
-    params->Set("FSR.cameraFar", dispatchDesc->cameraFar);
-    params->Set("FSR.cameraFovAngleVertical", dispatchDesc->cameraFovAngleVertical);
-    params->Set("FSR.frameTimeDelta", dispatchDesc->frameTimeDelta);
-    params->Set("FSR.viewSpaceToMetersFactor", dispatchDesc->viewSpaceToMetersFactor);
+    params->Set(OptiKeys::FSR_NearPlane, dispatchDesc->cameraNear);
+    params->Set(OptiKeys::FSR_FarPlane, dispatchDesc->cameraFar);
+    params->Set(OptiKeys::FSR_CameraFovVertical, dispatchDesc->cameraFovAngleVertical);
+    params->Set(OptiKeys::FSR_FrameTimeDelta, dispatchDesc->frameTimeDelta);
+    params->Set(OptiKeys::FSR_ViewSpaceToMetersFactor, dispatchDesc->viewSpaceToMetersFactor);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDesc->sharpness);
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width,

@@ -413,7 +413,7 @@ bool XeSSFeature_Vk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* 
     // bool supportsFloatResponsivePixelMask = Version() >= feature_version { 2, 0, 1 };
     // NVSDK_NGX_Resource_VK* paramReactiveMask = nullptr;
 
-    // if (InParameters->Get("FSR.reactive", (void**) &paramReactiveMask) == NVSDK_NGX_Result_Success)
+    // if (InParameters->Get(OptiKeys::FSR_Reactive, (void**) &paramReactiveMask) == NVSDK_NGX_Result_Success)
     //{
     //     if (!Config::Instance()->DisableReactiveMask.value_or(!supportsFloatResponsivePixelMask))
     //     {

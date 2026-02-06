@@ -1252,8 +1252,8 @@ void FSR3FG::SetUpscalerInputs(ID3D12GraphicsCommandList* InCmdList, NVSDK_NGX_P
 
     float tempCameraNear = 0.0f;
     float tempCameraFar = 0.0f;
-    InParameters->Get("FSR.cameraNear", &tempCameraNear);
-    InParameters->Get("FSR.cameraFar", &tempCameraFar);
+    InParameters->Get(OptiKeys::FSR_NearPlane, &tempCameraNear);
+    InParameters->Get(OptiKeys::FSR_FarPlane, &tempCameraFar);
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
         (tempCameraNear == 0.0f && tempCameraFar == 0.0f))
@@ -1276,7 +1276,7 @@ void FSR3FG::SetUpscalerInputs(ID3D12GraphicsCommandList* InCmdList, NVSDK_NGX_P
     }
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.cameraFovAngleVertical", &cameraVFov) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_CameraFovVertical, &cameraVFov) != NVSDK_NGX_Result_Success)
     {
         if (Config::Instance()->FsrVerticalFov.has_value())
             cameraVFov = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
@@ -1288,7 +1288,7 @@ void FSR3FG::SetUpscalerInputs(ID3D12GraphicsCommandList* InCmdList, NVSDK_NGX_P
     }
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default())
-        InParameters->Get("FSR.viewSpaceToMetersFactor", &meterFactor);
+        InParameters->Get(OptiKeys::FSR_ViewSpaceToMetersFactor, &meterFactor);
 
     State::Instance().lastFsrCameraFar = cameraFar;
     State::Instance().lastFsrCameraNear = cameraNear;

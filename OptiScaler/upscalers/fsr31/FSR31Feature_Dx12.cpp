@@ -282,12 +282,12 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     }
 
     ID3D12Resource* paramTransparency = nullptr;
-    if (InParameters->Get("FSR.transparencyAndComposition", &paramTransparency) == NVSDK_NGX_Result_Success)
-        InParameters->Get("FSR.transparencyAndComposition", (void**) &paramTransparency);
+    if (InParameters->Get(OptiKeys::FSR_TransparencyAndComp, &paramTransparency) == NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_TransparencyAndComp, (void**) &paramTransparency);
 
     ID3D12Resource* paramReactiveMask = nullptr;
-    if (InParameters->Get("FSR.reactive", &paramReactiveMask) == NVSDK_NGX_Result_Success)
-        InParameters->Get("FSR.reactive", (void**) &paramReactiveMask);
+    if (InParameters->Get(OptiKeys::FSR_Reactive, &paramReactiveMask) == NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_Reactive, (void**) &paramReactiveMask);
 
     ID3D12Resource* paramReactiveMask2 = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2) !=
@@ -389,7 +389,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     LOG_DEBUG("Sharpness: {0}", params.sharpness);
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.cameraNear", &params.cameraNear) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_NearPlane, &params.cameraNear) != NVSDK_NGX_Result_Success)
     {
         if (DepthInverted())
             params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
@@ -398,7 +398,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     }
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.cameraFar", &params.cameraFar) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_FarPlane, &params.cameraFar) != NVSDK_NGX_Result_Success)
     {
         if (DepthInverted())
             params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
@@ -407,7 +407,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     }
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.cameraFovAngleVertical", &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_CameraFovVertical, &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
     {
         if (Config::Instance()->FsrVerticalFov.has_value())
             params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
@@ -420,7 +420,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     }
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.frameTimeDelta", &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_FrameTimeDelta, &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) !=
                 NVSDK_NGX_Result_Success ||
@@ -431,7 +431,7 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
     LOG_DEBUG("FrameTimeDeltaInMsec: {0}", params.frameTimeDelta);
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.viewSpaceToMetersFactor", &params.viewSpaceToMetersFactor) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_ViewSpaceToMetersFactor, &params.viewSpaceToMetersFactor) != NVSDK_NGX_Result_Success)
         params.viewSpaceToMetersFactor = 0.0f;
 
     params.upscaleSize.width = TargetWidth();
@@ -508,14 +508,16 @@ bool FSR31FeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_
         }
     }
 
-    if (InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width) == NVSDK_NGX_Result_Success &&
+    // --- Output Scaling Override ---
+    // If external output scaling is enabled, we may need to adjust the reported upscale size
+    if (InParameters->Get(OptiKeys::FSR_UpscaleWidth, &params.upscaleSize.width) == NVSDK_NGX_Result_Success &&
         Config::Instance()->OutputScalingEnabled.value_or_default())
     {
         params.upscaleSize.width *=
             static_cast<uint32_t>(Config::Instance()->OutputScalingMultiplier.value_or_default());
     }
 
-    if (InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height) == NVSDK_NGX_Result_Success &&
+    if (InParameters->Get(OptiKeys::FSR_UpscaleHeight, &params.upscaleSize.height) == NVSDK_NGX_Result_Success &&
         Config::Instance()->OutputScalingEnabled.value_or_default())
     {
         params.upscaleSize.height *=

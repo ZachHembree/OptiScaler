@@ -226,7 +226,7 @@ bool FeatureProvider_Dx11::ChangeFeature(
         // if opti nvparam release it
         int optiParam = 0;
 
-        if (contextData->createParams->Get(OptiKeys::ProjectID.data(), &optiParam) == NVSDK_NGX_Result_Success &&
+        if (contextData->createParams->Get(OptiKeys::ProjectID, &optiParam) == NVSDK_NGX_Result_Success &&
             optiParam == 1)
         {
             TryDestroyNGXParameters(contextData->createParams, NVNGXProxy::D3D11_DestroyParameters());

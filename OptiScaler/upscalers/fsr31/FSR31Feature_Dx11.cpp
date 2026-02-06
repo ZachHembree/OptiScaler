@@ -467,14 +467,14 @@ bool FSR31FeatureDx11::Evaluate(ID3D11DeviceContext* DeviceContext, NVSDK_NGX_Pa
             LOG_WARN("Velocity configure result: {}", (UINT) result);
     }
 
-    if (InParameters->Get("FSR.upscaleSize.width", &params.upscaleSize.width) == NVSDK_NGX_Result_Success &&
+    if (InParameters->Get(OptiKeys::FSR_UpscaleWidth, &params.upscaleSize.width) == NVSDK_NGX_Result_Success &&
         Config::Instance()->OutputScalingEnabled.value_or_default())
     {
         params.upscaleSize.width *=
             static_cast<uint32_t>(Config::Instance()->OutputScalingMultiplier.value_or_default());
     }
 
-    if (InParameters->Get("FSR.upscaleSize.height", &params.upscaleSize.height) == NVSDK_NGX_Result_Success &&
+    if (InParameters->Get(OptiKeys::FSR_UpscaleHeight, &params.upscaleSize.height) == NVSDK_NGX_Result_Success &&
         Config::Instance()->OutputScalingEnabled.value_or_default())
     {
         params.upscaleSize.height *=

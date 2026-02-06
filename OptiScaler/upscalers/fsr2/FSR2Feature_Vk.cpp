@@ -298,10 +298,10 @@ bool FSR2FeatureVk::Evaluate(VkCommandBuffer InCmdBuffer, NVSDK_NGX_Parameter* I
     }
 
     void* paramTransparency = nullptr;
-    InParameters->Get("FSR.transparencyAndComposition", &paramTransparency);
+    InParameters->Get(OptiKeys::FSR_TransparencyAndComp, &paramTransparency);
 
     void* paramReactiveMask = nullptr;
-    InParameters->Get("FSR.reactive", &paramReactiveMask);
+    InParameters->Get(OptiKeys::FSR_Reactive, &paramReactiveMask);
 
     void* paramReactiveMask2 = nullptr;
     InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2);

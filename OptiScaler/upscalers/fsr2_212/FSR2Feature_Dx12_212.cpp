@@ -242,12 +242,12 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     ID3D12Resource* paramTransparency = nullptr;
-    if (InParameters->Get("FSR.transparencyAndComposition", &paramTransparency) == NVSDK_NGX_Result_Success)
-        InParameters->Get("FSR.transparencyAndComposition", (void**) &paramTransparency);
+    if (InParameters->Get(OptiKeys::FSR_TransparencyAndComp, &paramTransparency) == NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_TransparencyAndComp, (void**) &paramTransparency);
 
     ID3D12Resource* paramReactiveMask = nullptr;
-    if (InParameters->Get("FSR.reactive", &paramReactiveMask) == NVSDK_NGX_Result_Success)
-        InParameters->Get("FSR.reactive", (void**) &paramReactiveMask);
+    if (InParameters->Get(OptiKeys::FSR_Reactive, &paramReactiveMask) == NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_Reactive, (void**) &paramReactiveMask);
 
     ID3D12Resource* paramReactiveMask2 = nullptr;
     if (InParameters->Get(NVSDK_NGX_Parameter_DLSS_Input_Bias_Current_Color_Mask, &paramReactiveMask2) !=
@@ -340,7 +340,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     LOG_DEBUG("Sharpness: {0}", params.sharpness);
 
     if (Config::Instance()->FsrCameraNear.has_value() || !Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.cameraNear", &params.cameraNear) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_NearPlane, &params.cameraNear) != NVSDK_NGX_Result_Success)
     {
         if (DepthInverted())
             params.cameraFar = Config::Instance()->FsrCameraNear.value_or_default();
@@ -349,7 +349,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.cameraFar", &params.cameraFar) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_FarPlane, &params.cameraFar) != NVSDK_NGX_Result_Success)
     {
         if (DepthInverted())
             params.cameraNear = Config::Instance()->FsrCameraFar.value_or_default();
@@ -357,7 +357,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
             params.cameraFar = Config::Instance()->FsrCameraFar.value_or_default();
     }
 
-    if (InParameters->Get("FSR.cameraFovAngleVertical", &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
+    if (InParameters->Get(OptiKeys::FSR_CameraFovVertical, &params.cameraFovAngleVertical) != NVSDK_NGX_Result_Success)
     {
         if (Config::Instance()->FsrVerticalFov.has_value())
             params.cameraFovAngleVertical = Config::Instance()->FsrVerticalFov.value() * 0.0174532925199433f;
@@ -370,7 +370,7 @@ bool FSR2FeatureDx12_212::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVS
     }
 
     if (!Config::Instance()->FsrUseFsrInputValues.value_or_default() ||
-        InParameters->Get("FSR.frameTimeDelta", &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
+        InParameters->Get(OptiKeys::FSR_FrameTimeDelta, &params.frameTimeDelta) != NVSDK_NGX_Result_Success)
     {
         if (InParameters->Get(NVSDK_NGX_Parameter_FrameTimeDeltaInMsec, &params.frameTimeDelta) !=
                 NVSDK_NGX_Result_Success ||

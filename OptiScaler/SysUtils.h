@@ -182,46 +182,48 @@ inline static void to_lower_in_place(std::string& string)
  */
 namespace OptiKeys
 {
+    using CString = const char[];
+
     // Application name provided to upscalers
-    constexpr std::string_view ProjectID = "OptiScaler";
+    inline constexpr CString ProjectID = "OptiScaler";
 
     // ID code used for the Vulkan input provider
-    constexpr std::string_view VkProvider = "OptiVk";
-
+    inline constexpr CString VkProvider = "OptiVk";
     // ID code used for the DX11 input provider
-    constexpr std::string_view Dx11Provider = "OptiDx11";
-
+    inline constexpr CString Dx11Provider = "OptiDx11";
     // ID code used for the DX12 input provider
-    constexpr std::string_view Dx12Provider = "OptiDx12";
+    inline constexpr CString Dx12Provider = "OptiDx12";
 
     // ID code used for the XeSS upscaler backend
-    constexpr std::string_view XeSS = "xess";
-
+    inline constexpr CString XeSS = "xess";
     // ID code used for the XeSS upscaler backend used with the DirectX 11 on 12 compatibility layer
-    constexpr std::string_view XeSS_11on12 = "xess_12";
-
+    inline constexpr CString XeSS_11on12 = "xess_12";
     // ID code used for the FSR 2.1.x upscaler backend
-    constexpr std::string_view FSR21 = "fsr21";
-
+    inline constexpr CString FSR21 = "fsr21";
     // ID code used for the FSR 2.1.x upscaler backend used with the DirectX 11 on 12 compatibility layer
-    constexpr std::string_view FSR21_11on12 = "fsr21_12";
-
+    inline constexpr CString FSR21_11on12 = "fsr21_12";
     // ID code used for the FSR 2.2.x upscaler backend
-    constexpr std::string_view FSR22 = "fsr22";
-
+    inline constexpr CString FSR22 = "fsr22";
     // ID code used for the FSR 2.2.x upscaler backend used with the DirectX 11 on 12 compatibility layer
-    constexpr std::string_view FSR22_11on12 = "fsr22_12";
-
+    inline constexpr CString FSR22_11on12 = "fsr22_12";
     // ID code used for the FSR 3.1+ upscaler backend
-    constexpr std::string_view FSR31 = "fsr31";
-
+    inline constexpr CString FSR31 = "fsr31";
     // ID code used for the FSR 3.1+ upscaler backend used with the DirectX 11 on 12 compatibility layer
-    constexpr std::string_view FSR31_11on12 = "fsr31_12";
-
+    inline constexpr CString FSR31_11on12 = "fsr31_12";
     // ID code used for the DLSS upscaler backend
-    constexpr std::string_view DLSS = "dlss";
-
+    inline constexpr CString DLSS = "dlss";
     // ID code used for the DLSS-D/Ray Reconstruction upscaler+denoiser backend
-    constexpr std::string_view DLSSD = "dlssd";
+    inline constexpr CString DLSSD = "dlssd";
+
+    inline constexpr CString FSR_UpscaleWidth = "FSR.upscaleSize.width";
+    inline constexpr CString FSR_UpscaleHeight = "FSR.upscaleSize.height";
+
+    inline constexpr CString FSR_NearPlane = "FSR.cameraNear";
+    inline constexpr CString FSR_FarPlane = "FSR.cameraFar";
+    inline constexpr CString FSR_CameraFovVertical = "FSR.cameraFovAngleVertical";
+    inline constexpr CString FSR_FrameTimeDelta = "FSR.frameTimeDelta";
+    inline constexpr CString FSR_ViewSpaceToMetersFactor = "FSR.viewSpaceToMetersFactor";
+    inline constexpr CString FSR_TransparencyAndComp = "FSR.transparencyAndComposition";
+    inline constexpr CString FSR_Reactive = "FSR.reactive";
 
 } // namespace OptiKeys

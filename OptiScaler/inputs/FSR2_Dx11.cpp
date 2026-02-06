@@ -249,7 +249,7 @@ static FfxErrorCode ffxFsr2ContextCreate_Dx11(FfxFsr2Context* context, FfxFsr2Co
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D11_Init_with_ProjectID(
-            OptiKeys::ProjectID.data(), state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d11Device, &fcInfo,
+            OptiKeys::ProjectID, state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d11Device, &fcInfo,
             state.NVNGX_Version == 0 ? NVSDK_NGX_Version_API : state.NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
@@ -320,12 +320,12 @@ static FfxErrorCode ffxFsr2ContextDispatch_Dx11(FfxFsr2Context* context,
     params->Set(NVSDK_NGX_Parameter_Color, dispatchDescription->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, dispatchDescription->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, dispatchDescription->output.resource);
-    params->Set("FSR.cameraNear", dispatchDescription->cameraNear);
-    params->Set("FSR.cameraFar", dispatchDescription->cameraFar);
-    params->Set("FSR.cameraFovAngleVertical", dispatchDescription->cameraFovAngleVertical);
-    params->Set("FSR.frameTimeDelta", dispatchDescription->frameTimeDelta);
-    params->Set("FSR.transparencyAndComposition", dispatchDescription->transparencyAndComposition.resource);
-    params->Set("FSR.reactive", dispatchDescription->reactive.resource);
+    params->Set(OptiKeys::FSR_NearPlane, dispatchDescription->cameraNear);
+    params->Set(OptiKeys::FSR_FarPlane, dispatchDescription->cameraFar);
+    params->Set(OptiKeys::FSR_CameraFovVertical, dispatchDescription->cameraFovAngleVertical);
+    params->Set(OptiKeys::FSR_FrameTimeDelta, dispatchDescription->frameTimeDelta);
+    params->Set(OptiKeys::FSR_TransparencyAndComp, dispatchDescription->transparencyAndComposition.resource);
+    params->Set(OptiKeys::FSR_Reactive, dispatchDescription->reactive.resource);
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDescription->sharpness);
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDescription->renderSize.width,

@@ -286,8 +286,8 @@ bool IFeature::UpdateOutputResolution(const NVSDK_NGX_Parameter* InParameters)
     auto fsrDynamicOutputWidth = 0;
     auto fsrDynamicOutputHeight = 0;
 
-    InParameters->Get("FSR.upscaleSize.width", &fsrDynamicOutputWidth);
-    InParameters->Get("FSR.upscaleSize.height", &fsrDynamicOutputHeight);
+    InParameters->Get(OptiKeys::FSR_UpscaleWidth, &fsrDynamicOutputWidth);
+    InParameters->Get(OptiKeys::FSR_UpscaleHeight, &fsrDynamicOutputHeight);
 
     if (Config::Instance()->OutputScalingEnabled.value_or_default())
     {
@@ -345,8 +345,8 @@ void IFeature::GetDynamicOutputResolution(NVSDK_NGX_Parameter* InParameters, uns
     auto fsrDynamicOutputWidth = 0;
     auto fsrDynamicOutputHeight = 0;
 
-    InParameters->Get("FSR.upscaleSize.width", &fsrDynamicOutputWidth);
-    InParameters->Get("FSR.upscaleSize.height", &fsrDynamicOutputHeight);
+    InParameters->Get(OptiKeys::FSR_UpscaleWidth, &fsrDynamicOutputWidth);
+    InParameters->Get(OptiKeys::FSR_UpscaleHeight, &fsrDynamicOutputHeight);
 
     if (fsrDynamicOutputWidth > 0 && fsrDynamicOutputHeight > 0)
     {

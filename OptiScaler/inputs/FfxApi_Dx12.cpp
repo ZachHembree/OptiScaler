@@ -213,8 +213,8 @@ static bool CreateDLSSContext(ffxContext handle, const ffxDispatchDescUpscale* p
     params->Set(NVSDK_NGX_Parameter_Height, pExecParams->renderSize.height);
     params->Set(NVSDK_NGX_Parameter_OutWidth, initParams->maxUpscaleSize.width);
     params->Set(NVSDK_NGX_Parameter_OutHeight, initParams->maxUpscaleSize.height);
-    params->Set("FSR.upscaleSize.width", pExecParams->upscaleSize.width);
-    params->Set("FSR.upscaleSize.height", pExecParams->upscaleSize.height);
+    params->Set(OptiKeys::FSR_UpscaleWidth, pExecParams->upscaleSize.width);
+    params->Set(OptiKeys::FSR_UpscaleHeight, pExecParams->upscaleSize.height);
 
     auto width = pExecParams->upscaleSize.width > 0 ? pExecParams->upscaleSize.width : initParams->maxUpscaleSize.width;
 
@@ -411,7 +411,7 @@ ffxReturnCode_t ffxCreateContext_Dx12(ffxContext* context, ffxCreateContextDescH
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
-            OptiKeys::ProjectID.data(), state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
+            OptiKeys::ProjectID, state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
             state.NVNGX_Version == 0 ? NVSDK_NGX_Version_API : state.NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
@@ -770,23 +770,23 @@ ffxReturnCode_t ffxDispatch_Dx12(ffxContext* context, ffxDispatchDescHeader* des
     params->Set(NVSDK_NGX_Parameter_Color, dispatchDesc->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, dispatchDesc->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, dispatchDesc->output.resource);
-    params->Set("FSR.cameraNear", dispatchDesc->cameraNear);
-    params->Set("FSR.cameraFar", dispatchDesc->cameraFar);
-    params->Set("FSR.cameraFovAngleVertical", dispatchDesc->cameraFovAngleVertical);
-    params->Set("FSR.frameTimeDelta", dispatchDesc->frameTimeDelta);
-    params->Set("FSR.viewSpaceToMetersFactor", dispatchDesc->viewSpaceToMetersFactor);
+    params->Set(OptiKeys::FSR_NearPlane, dispatchDesc->cameraNear);
+    params->Set(OptiKeys::FSR_FarPlane, dispatchDesc->cameraFar);
+    params->Set(OptiKeys::FSR_CameraFovVertical, dispatchDesc->cameraFovAngleVertical);
+    params->Set(OptiKeys::FSR_FrameTimeDelta, dispatchDesc->frameTimeDelta);
+    params->Set(OptiKeys::FSR_ViewSpaceToMetersFactor, dispatchDesc->viewSpaceToMetersFactor);
 
     if (dispatchDesc->transparencyAndComposition.description.width >= dispatchDesc->renderSize.width &&
         dispatchDesc->transparencyAndComposition.description.height >= dispatchDesc->renderSize.height)
-        params->Set("FSR.transparencyAndComposition", dispatchDesc->transparencyAndComposition.resource);
+        params->Set(OptiKeys::FSR_TransparencyAndComp, dispatchDesc->transparencyAndComposition.resource);
 
     if (dispatchDesc->reactive.description.width >= dispatchDesc->renderSize.width &&
         dispatchDesc->reactive.description.height >= dispatchDesc->renderSize.height)
-        params->Set("FSR.reactive", dispatchDesc->reactive.resource);
+        params->Set(OptiKeys::FSR_Reactive, dispatchDesc->reactive.resource);
 
     params->Set(NVSDK_NGX_Parameter_Sharpness, dispatchDesc->sharpness);
-    params->Set("FSR.upscaleSize.width", dispatchDesc->upscaleSize.width);
-    params->Set("FSR.upscaleSize.height", dispatchDesc->upscaleSize.height);
+    params->Set(OptiKeys::FSR_UpscaleWidth, dispatchDesc->upscaleSize.width);
+    params->Set(OptiKeys::FSR_UpscaleHeight, dispatchDesc->upscaleSize.height);
 
     LOG_DEBUG("handle: {:X}, internalResolution: {}x{}", handle->Id, dispatchDesc->renderSize.width,
               dispatchDesc->renderSize.height);

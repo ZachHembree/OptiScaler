@@ -243,7 +243,7 @@ bool XeSSFeatureDx12::Evaluate(ID3D12GraphicsCommandList* InCommandList, NVSDK_N
         LOG_DEBUG("AutoExposure enabled!");
 
     ID3D12Resource* paramReactiveMask = nullptr;
-    InParameters->Get("FSR.reactive", &paramReactiveMask);
+    InParameters->Get(OptiKeys::FSR_Reactive, &paramReactiveMask);
     bool supportsFloatResponsivePixelMask = Version() >= feature_version { 2, 0, 1 };
 
     if (paramReactiveMask != nullptr)

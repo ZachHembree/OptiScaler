@@ -169,7 +169,7 @@ void PrepareLogger()
     {
         std::cerr << ex.what() << std::endl;
 
-        auto logger = spdlog::stdout_color_mt(OptiKeys::XeSS.data());
+        auto logger = spdlog::stdout_color_mt(OptiKeys::XeSS);
         logger->set_pattern("[%H:%M:%S.%f] [%L] %v");
         logger->set_level((spdlog::level::level_enum) 2);
         spdlog::set_default_logger(logger);

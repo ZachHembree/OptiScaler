@@ -293,7 +293,7 @@ static Fsr3::FfxErrorCode ffxFsr3ContextCreate_Dx12(Fsr3::FfxFsr3UpscalerContext
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
-            OptiKeys::ProjectID.data(), state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
+            OptiKeys::ProjectID, state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
             state.NVNGX_Version == 0 ? NVSDK_NGX_Version_API : state.NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
@@ -369,13 +369,13 @@ static Fsr3::FfxErrorCode ffxFsr3ContextDispatch_Dx12(Fsr3::FfxFsr3UpscalerConte
     params->Set(NVSDK_NGX_Parameter_Color, pDispatchDescription->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pDispatchDescription->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, pDispatchDescription->output.resource);
-    params->Set("FSR.cameraNear", pDispatchDescription->cameraNear);
-    params->Set("FSR.cameraFar", pDispatchDescription->cameraFar);
-    params->Set("FSR.cameraFovAngleVertical", pDispatchDescription->cameraFovAngleVertical);
-    params->Set("FSR.frameTimeDelta", pDispatchDescription->frameTimeDelta);
-    params->Set("FSR.transparencyAndComposition", pDispatchDescription->transparencyAndComposition.resource);
-    params->Set("FSR.reactive", pDispatchDescription->reactive.resource);
-    params->Set("FSR.viewSpaceToMetersFactor", pDispatchDescription->viewSpaceToMetersFactor);
+    params->Set(OptiKeys::FSR_NearPlane, pDispatchDescription->cameraNear);
+    params->Set(OptiKeys::FSR_FarPlane, pDispatchDescription->cameraFar);
+    params->Set(OptiKeys::FSR_CameraFovVertical, pDispatchDescription->cameraFovAngleVertical);
+    params->Set(OptiKeys::FSR_FrameTimeDelta, pDispatchDescription->frameTimeDelta);
+    params->Set(OptiKeys::FSR_TransparencyAndComp, pDispatchDescription->transparencyAndComposition.resource);
+    params->Set(OptiKeys::FSR_Reactive, pDispatchDescription->reactive.resource);
+    params->Set(OptiKeys::FSR_ViewSpaceToMetersFactor, pDispatchDescription->viewSpaceToMetersFactor);
     params->Set(NVSDK_NGX_Parameter_Sharpness, pDispatchDescription->sharpness);
 
     if (pDispatchDescription->color.resource != nullptr && pDispatchDescription->color.state > 0)
@@ -524,7 +524,7 @@ ffxFsr3ContextCreate_Pattern_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext,
         fcInfo.PathListInfo.Length = (int) pathStorage.size();
 
         auto nvResult = NVSDK_NGX_D3D12_Init_with_ProjectID(
-            OptiKeys::ProjectID.data(), state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
+            OptiKeys::ProjectID, state.NVNGX_Engine, VER_PRODUCT_VERSION_STR, exePath.c_str(), _d3d12Device, &fcInfo,
             state.NVNGX_Version == 0 ? NVSDK_NGX_Version_API : state.NVNGX_Version);
 
         if (nvResult != NVSDK_NGX_Result_Success)
@@ -591,13 +591,13 @@ ffxFsr3ContextDispatch_Pattern_Dx12(Fsr3::FfxFsr3UpscalerContext* pContext,
     params->Set(NVSDK_NGX_Parameter_Color, pDispatchDescription->color.resource);
     params->Set(NVSDK_NGX_Parameter_MotionVectors, pDispatchDescription->motionVectors.resource);
     params->Set(NVSDK_NGX_Parameter_Output, pDispatchDescription->output.resource);
-    params->Set("FSR.cameraNear", pDispatchDescription->cameraNear);
-    params->Set("FSR.cameraFar", pDispatchDescription->cameraFar);
-    params->Set("FSR.cameraFovAngleVertical", pDispatchDescription->cameraFovAngleVertical);
-    params->Set("FSR.frameTimeDelta", pDispatchDescription->frameTimeDelta);
-    params->Set("FSR.transparencyAndComposition", pDispatchDescription->transparencyAndComposition.resource);
-    params->Set("FSR.reactive", pDispatchDescription->reactive.resource);
-    params->Set("FSR.viewSpaceToMetersFactor", pDispatchDescription->viewSpaceToMetersFactor);
+    params->Set(OptiKeys::FSR_NearPlane, pDispatchDescription->cameraNear);
+    params->Set(OptiKeys::FSR_FarPlane, pDispatchDescription->cameraFar);
+    params->Set(OptiKeys::FSR_CameraFovVertical, pDispatchDescription->cameraFovAngleVertical);
+    params->Set(OptiKeys::FSR_FrameTimeDelta, pDispatchDescription->frameTimeDelta);
+    params->Set(OptiKeys::FSR_TransparencyAndComp, pDispatchDescription->transparencyAndComposition.resource);
+    params->Set(OptiKeys::FSR_Reactive, pDispatchDescription->reactive.resource);
+    params->Set(OptiKeys::FSR_ViewSpaceToMetersFactor, pDispatchDescription->viewSpaceToMetersFactor);
     params->Set(NVSDK_NGX_Parameter_Sharpness, pDispatchDescription->sharpness);
 
     if (pDispatchDescription->color.resource != nullptr && pDispatchDescription->color.state > 0)
