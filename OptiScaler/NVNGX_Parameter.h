@@ -1,5 +1,6 @@
 #pragma once
 #include "SysUtils.h"
+#include <concepts>
 #include "Config.h"
 #include <ankerl/unordered_dense.h>
 
@@ -1029,10 +1030,40 @@ inline static void SetNGXParamAllocType(NVSDK_NGX_Parameter& params, uint32_t al
 }
 
 /**
+ * @brief Retrieves a value from NGX parameters, provided the feature is toggled on.
+ * @return True if 'isEnabled' is true AND the NGX parameter was successfully retrieved.
+ */
+template <typename T>
+static bool TryGetToggleableNGXParam(const NVSDK_NGX_Parameter& ngxParams, const char* key,
+                                      const CustomOptional<bool>& isEnabled, T& outValue)
+{
+    return isEnabled.value_or_default() && (ngxParams.Get(key, &outValue) == NVSDK_NGX_Result_Success);
+}
+
+/**
+ * @brief Attempts to retrieve a pointer-type NGX parameter.
+ * @tparam T Must be a pointer type (e.g., ID3D12Resource*).
+ * @return True on success.
+ */
+template <typename T>
+    requires std::is_pointer_v<T>
+static bool TryGetNGXVoidPointer(const NVSDK_NGX_Parameter& ngxParams, const char* key, T& outValue)
+{
+    NVSDK_NGX_Result result = ngxParams.Get(key, &outValue);
+
+    // Fallback
+    if (result != NVSDK_NGX_Result_Success)
+        result = ngxParams.Get(key, reinterpret_cast<void**>(&outValue));
+
+    return (result == NVSDK_NGX_Result_Success);
+}
+
+/**
  * @brief Attempts to safely delete an NGX parameter table. Dynamically allocated NGX tables use the NGX API.
  * OptiScaler tables use delete. Persistent tables are not freed.
  */
 template <typename PFN_DestroyNGXParameters>
+    requires std::is_pointer_v<PFN_DestroyNGXParameters>
 static inline bool TryDestroyNGXParameters(NVSDK_NGX_Parameter* InParameters, PFN_DestroyNGXParameters NVFree = nullptr)
 {
     if (InParameters == nullptr)
