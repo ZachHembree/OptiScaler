@@ -181,6 +181,8 @@ static void ApplySamplerOverrides(D3D12_STATIC_SAMPLER_DESC& samplerDesc)
         }
     }
 
+    samplerDesc.MipLODBias = std::clamp(samplerDesc.MipLODBias, -16.0f, 15.99f);
+
     if (Config::Instance()->AnisotropyOverride.has_value())
     {
         LOG_DEBUG("Overriding {2:X} to anisotropic filtering {0} -> {1}", samplerDesc.MaxAnisotropy,
